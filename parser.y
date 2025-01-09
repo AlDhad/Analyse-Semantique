@@ -1,6 +1,7 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h>
     #include <stdbool.h>
     #include <math.h>
     #include "symbolTable.h"
@@ -8,6 +9,14 @@
     #include "pile.h"
 
     //declarations 
+
+    typedef struct {
+    int baseType;      // ENTIER, FLOTTANT, STRING, etc.
+    bool isArray;      // Whether it's an array
+    bool isConst;      // Whether it's a constant
+    int arraySize;     // Size if it's an array
+    char* structName;  // Name if it's a struct
+} TypeInfo;
     TableSymbole *TS;
     qTable *TQ;
     qPile *P;
@@ -31,6 +40,74 @@
     int sauv = 0;
     int sauvline = 1;
 
+    bool areTypesCompatible(TypeInfo* t1, TypeInfo* t2) {
+    if (t1->baseType != t2->baseType) {
+        // Allow implicit conversion from int to float
+        if (t1->baseType == FLOTTANT && t2->baseType == ENTIER) {
+            return true;
+        }
+        return false;
+    }
+    
+    if (t1->isArray != t2->isArray) {
+        return false;
+    }
+    
+    if (t1->isArray && t2->isArray && t1->arraySize != t2->arraySize) {
+        return false;
+    }
+    
+    return true;
+}
+
+// Function to check if an identifier is declared
+bool isDeclared(char* id) {
+    return rechercherSymbole(TS, id) != NULL;
+}
+
+// Function to check array bounds
+bool isValidArrayAccess(char* id, int index) {
+    Symbole* sym = rechercherSymbole(TS, id);
+    if (!sym || !sym->isArray) {
+        return false;
+    }
+    return index >= 0 && index < sym->arraySize;
+}
+
+// Function to get type of an expression
+TypeInfo getExpressionType(char* expr) {
+    TypeInfo type;
+    Symbole* sym = rechercherSymbole(TS, expr);
+    
+    if (sym) {
+        type.baseType = sym->type;
+        type.isArray = sym->isArray;
+        type.arraySize = sym->arraySize;
+        type.isConst = sym->isConst;
+        type.structName = sym->structName;
+    } else {
+        // Handle literals
+        if (strspn(expr, "0123456789") == strlen(expr)) {
+            type.baseType = ENTIER;
+        } else if (strchr(expr, '.')) {
+            type.baseType = FLOTTANT;
+        }
+        type.isArray = false;
+        type.isConst = false;
+    }
+    
+    return type;
+}
+
+// Error reporting function
+void semanticError(const char* message, int line) {
+    fprintf(stderr, "Semantic error at line %d: %s\n", line, message);
+    exit(1);
+}
+TypeInfo currentType;
+    char currentFunction[256];
+    bool inLoop = false;
+    int loopNestingLevel = 0;
 %}
 
 
@@ -177,7 +254,15 @@ declarations:
     ;
 
 declaration:
-    type ID SEMICOLON {printf("declaration correcte syntaxiquement\n");}
+    type ID SEMICOLON {
+        if (isDeclared($2.str)) {
+            semanticError("Variable already declared", line);
+        }
+        
+        Symbole* sym = creerSymbole($2.str, currentType.baseType);
+        sym->isConst = currentType.isConst;
+        insererSymbole(TS, sym);
+    }
     | tableau SEMICOLON {printf("declaration correcte syntaxiquement\n");}
     | type_Struct SEMICOLON {printf("declaration correcte syntaxiquement\n");}
     ;
