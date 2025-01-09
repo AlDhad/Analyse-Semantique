@@ -1,6 +1,12 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
+    #include <stdbool.h>
+    #include <math.h>
+    #include "TableSymbole.h"
+    #include "quadruplet.h"
+    #include "pile.h"
+
     extern FILE *yyin;
     int yylex();
     void yyerror(const char *s);
@@ -15,10 +21,17 @@ int sauvline = 1;
 
 %union
 {
-char str[100];
+int type;
+char str[255];
 char charv;
 int intv ; 
 float flt;
+bool boolean;
+struct {
+        char* valeur;
+        char* nom;
+        int type;
+    } structure;
 }
 
 %token  DEBUT FIN WHILE FOR
@@ -27,18 +40,34 @@ float flt;
 %token  OR AND NOT
 %token  IF ELSE ELIF
 %token  DEB_CORPS FIN_CORPS
-%token  TRUE FALSE
+%token<boolean> TRUE FALSE
 %token  PAR_OUV PAR_FERM
-%token  CARACTERE CHAINE
-%token  INT FLOAT 
+%token<charv> CARACTERE
+%token<str> CHAINE
+%token<intv> INT
+%token<flt> FLOAT 
 %token  DEB_TABLEAU FIN_TABLEAU TABLE ENREGISTREMENT POINTEUR
-%token  CONST ENTIER FLOTTANT STRING CHAR BOOLEAN
-%token  ID INCREM DECREM PLUS DIV MOINS MULT MOD PUISS ASSIGN
+%token<type> CONST ENTIER FLOTTANT STRING CHAR BOOLEAN
+%token<str> ID
+%token INCREM DECREM PLUS DIV MOINS MULT MOD PUISS ASSIGN
 %token  SEMICOLON
 %token  INF INF_EGAL SUP SUPP_EGAL EQUAL NOT_EQUAL
 %token  FROM
 %token  TO
 %token  VIRGULE 
+
+%type<type> type
+%type<type> valeur
+%type<structure> tableau
+%type<structure> type_Struct
+%type<structure> variable
+%type<structure> expression
+%type<structure> declaration
+%type<structure> incrementation
+%type<structure> assignment
+%type<structure> parametreCall
+%type<structure> fonction
+%type<structure> parametre
 
 %right OU
 %right ET
@@ -69,7 +98,7 @@ type :
     ;
 
 tableau :
-    type ID DEB_TABLEAU INT FIN_TABLEAU
+    TABLE ID DEB_TABLEAU INT FIN_TABLEAU
     ;
 
 type_Struct : 
@@ -167,7 +196,8 @@ read:
 
 write:
     PRINT PAR_OUV CHAINE VIRGULE ID PAR_FERM SEMICOLON
-    | PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON{printf("write correcte syntaxiquement\n");}
+    |PRINT PAR_OUV ID PAR_FERM SEMICOLON
+    |PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON{printf("write correcte syntaxiquement\n");}
     ;
 
 retourner:
