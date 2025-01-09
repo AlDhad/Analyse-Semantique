@@ -41,7 +41,7 @@ Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *v
     symbole->nnumLigne = numLigne;
     symbole->adresseMem = adresseMem;
 
-    if (categorie == FONCTION)
+    if (categorie == FUNCTION)
     {
         symbole->infoFonction = (InfoFonction *)malloc(sizeof(InfoFonction));
         if (symbole->infoFonction == NULL)
@@ -173,7 +173,7 @@ void afficherInfoFonction(Symbole *symbole) {
 }
 
 int main() {
-    Symbole *symbole = creerSymbole(FONCTION, "main", "void", "", 1, 0);
+    Symbole *symbole = creerSymbole(FUNCTION, "main", "void", "", 1, 0);
     Symbole *symbole2 = creerSymbole(VARIABLE, "x", "int", "8", 4, 0);
     
     TableSymbole *table = creerTableSymbole();
