@@ -21,10 +21,12 @@ int sauvline = 1;
 
 %union
 {
-char str[100];
+int type;
+char str[255];
 char charv;
 int intv ; 
 float flt;
+bool boolean;
 struct {
         char* valeur;
         char* nom;
@@ -191,7 +193,8 @@ read:
 
 write:
     PRINT PAR_OUV CHAINE VIRGULE ID PAR_FERM SEMICOLON
-    | PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON{printf("write correcte syntaxiquement\n");}
+    |PRINT PAR_OUV ID PAR_FERM SEMICOLON
+    |PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON{printf("write correcte syntaxiquement\n");}
     ;
 
 retourner:
