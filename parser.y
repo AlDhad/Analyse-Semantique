@@ -7,14 +7,29 @@
     #include "quadruplet.h"
     #include "pile.h"
 
+    //declarations 
+    SymbolTable *TS;
+    qTable *TQ;
+    qPile *P;
+
+    qNoeud* quad;
+    Symbol* node;
+
+    int sauvLabel;
+
+    int qC = 0;
+
+    extern int colnum ;
+    extern int lignenum ;
+
     extern FILE *yyin;
     int yylex();
     void yyerror(const char *s);
     int line = 1;        // Numéro de ligne courant
-int linecol = 0;         // Numéro de colonne courant
-char *yyin_filename = NULL;
-int sauv = 0;
-int sauvline = 1;
+    int linecol = 0;         // Numéro de colonne courant
+    char *yyin_filename = NULL;
+    int sauv = 0;
+    int sauvline = 1;
 
 %}
 
@@ -85,7 +100,22 @@ struct {
 %%
 
 programme:
-    functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS {printf("programme correcte syntaxiquement\n");}
+ {
+        // initialisation des table des symboles et table des quadruplets 
+        // et la pile de manipulation des quadruplets
+        TS = createSymbolTable() ;  
+        TQ = initialiserTQ() ;
+        P = initialiserP();
+
+    }
+    functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS {
+        qC++;
+        quad = creer_Q("fin", "", "", "", qC);
+        inserer_TQ(TQ, quad); 
+        afficher(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);  // afficher TQ pour confirmer
+        afficherTQDansFichier(TQ, "output.txt");
+        printf("\nProgramme accepte.");
     ;
 
 type :
