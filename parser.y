@@ -99,13 +99,10 @@ struct {
 %%
 
 programme:
- {
-        // initialisation des table des symboles et table des quadruplets 
-        // et la pile de manipulation des quadruplets
+    {
         TS = creerTableSymbole();  
         TQ = initialiserTQ() ;
         P = initialiserP();
-
     }
     functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS {
         qC++;

@@ -172,20 +172,20 @@ void afficherInfoFonction(Symbole *symbole) {
     }
 }
 
-int main() {
-    Symbole *symbole = creerSymbole(FUNCTION, "main", "void", "", 1, 0);
-    Symbole *symbole2 = creerSymbole(VARIABLE, "x", "int", "8", 4, 0);
+// int main() {
+//     Symbole *symbole = creerSymbole(FUNCTION, "main", "void", "", 1, 0);
+//     Symbole *symbole2 = creerSymbole(VARIABLE, "x", "int", "8", 4, 0);
     
-    TableSymbole *table = creerTableSymbole();
-    if (table != NULL) {
-        printf("Table des symboles créée\n");
-    }
-    insererSymbole(table, symbole);
-    insererSymbole(table, symbole2);
-    afficherTableSymbole(table);
-    ajouterParametre(symbole->infoFonction, "a", "int");
-    afficherTableSymbole(table);
-    printf("affihcage des informations de la fonction\n");
-    afficherInfoFonction(symbole);
-    return 0;
-}
+//     TableSymbole *table = creerTableSymbole();
+//     if (table != NULL) {
+//         printf("Table des symboles créée\n");
+//     }
+//     insererSymbole(table, symbole);
+//     insererSymbole(table, symbole2);
+//     afficherTableSymbole(table);
+//     ajouterParametre(symbole->infoFonction, "a", "int");
+//     afficherTableSymbole(table);
+//     printf("affihcage des informations de la fonction\n");
+//     afficherInfoFonction(symbole);
+//     return 0;
+// }

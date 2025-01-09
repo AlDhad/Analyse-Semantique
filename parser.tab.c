@@ -618,16 +618,16 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   102,   102,   102,   122,   123,   124,   125,   126,   127,
-     131,   135,   138,   139,   140,   141,   142,   143,   146,   147,
-     148,   149,   152,   153,   154,   155,   156,   157,   158,   159,
-     160,   161,   162,   163,   164,   165,   166,   167,   168,   169,
-     173,   174,   177,   179,   183,   184,   185,   187,   189,   192,
-     193,   196,   198,   199,   203,   204,   205,   207,   209,   211,
-     212,   213,   214,   215,   216,   217,   218,   219,   220,   221,
-     224,   228,   229,   230,   234,   238,   239,   240,   241,   245,
-     249,   250,   256,   257,   259,   261,   262,   267,   272,   274,
-     275,   280,   281
+       0,   102,   102,   102,   119,   120,   121,   122,   123,   124,
+     128,   132,   135,   136,   137,   138,   139,   140,   143,   144,
+     145,   146,   149,   150,   151,   152,   153,   154,   155,   156,
+     157,   158,   159,   160,   161,   162,   163,   164,   165,   166,
+     170,   171,   174,   176,   180,   181,   182,   184,   186,   189,
+     190,   193,   195,   196,   200,   201,   202,   204,   206,   208,
+     209,   210,   211,   212,   213,   214,   215,   216,   217,   218,
+     221,   225,   226,   227,   231,   235,   236,   237,   238,   242,
+     246,   247,   253,   254,   256,   258,   259,   264,   269,   271,
+     272,   277,   278
 };
 #endif
 
@@ -1370,19 +1370,16 @@ yyreduce:
     {
   case 2: /* $@1: %empty  */
 #line 102 "parser.y"
- {
-        // initialisation des table des symboles et table des quadruplets 
-        // et la pile de manipulation des quadruplets
+    {
         TS = creerTableSymbole();  
         TQ = initialiserTQ() ;
         P = initialiserP();
-
     }
-#line 1382 "parser.tab.c"
+#line 1379 "parser.tab.c"
     break;
 
   case 3: /* programme: $@1 functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS  */
-#line 110 "parser.y"
+#line 107 "parser.y"
                                                                                 {
         qC++;
         quad = creer_Q("fin", "", "", "", qC);
@@ -1392,103 +1389,103 @@ yyreduce:
         afficherTQDansFichier(TQ, "output.txt");
         printf("\nProgramme accepte.");
     }
-#line 1396 "parser.tab.c"
+#line 1393 "parser.tab.c"
     break;
 
   case 44: /* declaration: type ID SEMICOLON  */
-#line 183 "parser.y"
+#line 180 "parser.y"
                       {printf("declaration correcte syntaxiquement\n");}
-#line 1402 "parser.tab.c"
+#line 1399 "parser.tab.c"
     break;
 
   case 45: /* declaration: tableau SEMICOLON  */
-#line 184 "parser.y"
+#line 181 "parser.y"
                         {printf("declaration correcte syntaxiquement\n");}
-#line 1408 "parser.tab.c"
+#line 1405 "parser.tab.c"
     break;
 
   case 46: /* declaration: type_Struct SEMICOLON  */
-#line 185 "parser.y"
+#line 182 "parser.y"
                             {printf("declaration correcte syntaxiquement\n");}
-#line 1414 "parser.tab.c"
+#line 1411 "parser.tab.c"
     break;
 
   case 49: /* fonction: type FONCTION ID PAR_OUV parametres PAR_FERM corps  */
-#line 192 "parser.y"
+#line 189 "parser.y"
                                                        {printf("fonction correcte syntaxiquement\n");}
-#line 1420 "parser.tab.c"
+#line 1417 "parser.tab.c"
     break;
 
   case 50: /* fonction: FONCTION ID PAR_OUV parametres PAR_FERM corps  */
-#line 193 "parser.y"
+#line 190 "parser.y"
                                                     {printf("fonction correcte syntaxiquement\n");}
-#line 1426 "parser.tab.c"
+#line 1423 "parser.tab.c"
     break;
 
   case 52: /* parametres: parametre VIRGULE parametres  */
-#line 198 "parser.y"
+#line 195 "parser.y"
                                    {printf("parametres correcte syntaxiquement\n");}
-#line 1432 "parser.tab.c"
+#line 1429 "parser.tab.c"
     break;
 
   case 56: /* parametre: ENREGISTREMENT ID  */
-#line 205 "parser.y"
+#line 202 "parser.y"
                         {printf("parametre correcte syntaxiquement\n");}
-#line 1438 "parser.tab.c"
+#line 1435 "parser.tab.c"
     break;
 
   case 70: /* read: INPUT PAR_OUV ID PAR_FERM SEMICOLON  */
-#line 224 "parser.y"
+#line 221 "parser.y"
                                         {printf("read correcte syntaxiquement\n");}
-#line 1444 "parser.tab.c"
+#line 1441 "parser.tab.c"
     break;
 
   case 73: /* write: PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON  */
-#line 230 "parser.y"
+#line 227 "parser.y"
                                             {printf("write correcte syntaxiquement\n");}
-#line 1450 "parser.tab.c"
+#line 1447 "parser.tab.c"
     break;
 
   case 74: /* retourner: RETURN expression  */
-#line 234 "parser.y"
+#line 231 "parser.y"
                       {printf("retourner correcte syntaxiquement\n");}
-#line 1456 "parser.tab.c"
+#line 1453 "parser.tab.c"
     break;
 
   case 79: /* condition: IF PAR_OUV expression PAR_FERM corps elsebloc  */
-#line 245 "parser.y"
+#line 242 "parser.y"
                                                    {printf("condition correcte syntaxiquement\n");}
-#line 1462 "parser.tab.c"
+#line 1459 "parser.tab.c"
     break;
 
   case 80: /* loop: WHILE PAR_OUV expression PAR_FERM corps  */
-#line 249 "parser.y"
+#line 246 "parser.y"
                                               {printf("condition correcte syntaxiquement\n");}
-#line 1468 "parser.tab.c"
+#line 1465 "parser.tab.c"
     break;
 
   case 81: /* loop: FOR PAR_OUV ID FROM INT TO INT PAR_FERM corps  */
-#line 251 "parser.y"
+#line 248 "parser.y"
     {
         printf("For loop recognized\n");
     }
-#line 1476 "parser.tab.c"
+#line 1473 "parser.tab.c"
     break;
 
   case 90: /* parametresCall: parametreCall  */
-#line 276 "parser.y"
+#line 273 "parser.y"
     {printf("parametres de l'appel du fonction correcte syntaxiquement\n");}
-#line 1482 "parser.tab.c"
+#line 1479 "parser.tab.c"
     break;
 
   case 92: /* parametreCall: variable  */
-#line 281 "parser.y"
+#line 278 "parser.y"
                {printf("parametre correcte syntaxiquement\n");}
-#line 1488 "parser.tab.c"
+#line 1485 "parser.tab.c"
     break;
 
 
-#line 1492 "parser.tab.c"
+#line 1489 "parser.tab.c"
 
       default: break;
     }
@@ -1681,7 +1678,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 284 "parser.y"
+#line 281 "parser.y"
 
 
 void yyerror(const char *s) {

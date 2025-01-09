@@ -1,9 +1,13 @@
 #include "quadruplet.h"
 #include "pile.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
 
 void updateLabel(qNoeud *Q, int adresse){
     char new[20];
-    itoa(adresse, new, 10);
+    sprintf(new, "%d", adresse);
     strcpy(Q->operande1, new);
     return;
 }
