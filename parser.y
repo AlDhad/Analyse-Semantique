@@ -40,74 +40,59 @@
     int sauv = 0;
     int sauvline = 1;
 
-    bool areTypesCompatible(TypeInfo* t1, TypeInfo* t2) {
-    if (t1->baseType != t2->baseType) {
-        // Allow implicit conversion from int to float
-        if (t1->baseType == FLOTTANT && t2->baseType == ENTIER) {
-            return true;
+    #define TYPE_ENTIER "ENTIER"
+#define TYPE_FLOTTANT "FLOTTANT"
+#define TYPE_CHAR "CHAR"
+#define TYPE_STRING "STRING"
+#define TYPE_BOOLEAN "BOOLEAN"
+
+// Modified type checking function to work with your symbol table
+bool areTypesCompatible(const char* type1, const char* type2) {
+    if (strcmp(type1, type2) == 0) {
+        return true;
+    }
+    
+    // Allow implicit conversion from int to float
+    if (strcmp(type1, TYPE_FLOTTANT) == 0 && strcmp(type2, TYPE_ENTIER) == 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Modified function to check if an identifier is declared
+bool isDeclared(const char* id) {
+    Symbole* found;
+    return rechercherSymbole(TS, id, &found);
+}
+
+// Function to get type of an identifier
+char* getIdentifierType(const char* id) {
+    Symbole* found;
+    if (rechercherSymbole(TS, id, &found)) {
+        return found->type;
+    }
+    return NULL;
+}
+
+// Function to determine if a literal is valid for a given type
+bool isValidLiteralForType(const char* literal, const char* type) {
+    if (strcmp(type, TYPE_ENTIER) == 0) {
+        // Check if string contains only digits
+        for (int i = 0; literal[i] != '\0'; i++) {
+            if (!isdigit(literal[i])) return false;
         }
-        return false;
+        return true;
     }
-    
-    if (t1->isArray != t2->isArray) {
-        return false;
+    else if (strcmp(type, TYPE_FLOTTANT) == 0) {
+        // Check if string is a valid float
+        char* endptr;
+        strtof(literal, &endptr);
+        return *endptr == '\0';
     }
-    
-    if (t1->isArray && t2->isArray && t1->arraySize != t2->arraySize) {
-        return false;
-    }
-    
-    return true;
+    // Add more type checks as needed
+    return false;
 }
-
-// Function to check if an identifier is declared
-bool isDeclared(char* id) {
-    return rechercherSymbole(TS, id) != NULL;
-}
-
-// Function to check array bounds
-bool isValidArrayAccess(char* id, int index) {
-    Symbole* sym = rechercherSymbole(TS, id);
-    if (!sym || !sym->isArray) {
-        return false;
-    }
-    return index >= 0 && index < sym->arraySize;
-}
-
-// Function to get type of an expression
-TypeInfo getExpressionType(char* expr) {
-    TypeInfo type;
-    Symbole* sym = rechercherSymbole(TS, expr);
-    
-    if (sym) {
-        type.baseType = sym->type;
-        type.isArray = sym->isArray;
-        type.arraySize = sym->arraySize;
-        type.isConst = sym->isConst;
-        type.structName = sym->structName;
-    } else {
-        // Handle literals
-        if (strspn(expr, "0123456789") == strlen(expr)) {
-            type.baseType = ENTIER;
-        } else if (strchr(expr, '.')) {
-            type.baseType = FLOTTANT;
-        }
-        type.isArray = false;
-        type.isConst = false;
-    }
-    
-    return type;
-}
-
-// Error reporting function
-void semanticError(const char* message, int line) {
-    fprintf(stderr, "Semantic error at line %d: %s\n", line, message);
-    exit(1);
-}
-TypeInfo currentType;
-    char currentFunction[256];
-    bool inLoop = false;
-    int loopNestingLevel = 0;
 %}
 
 
@@ -284,12 +269,30 @@ declarations:
 
 declaration:
     type ID SEMICOLON {
-        if (isDeclared($2.str)) {
+        Symbole* found;
+        if (rechercherSymbole(TS, $2, &found)) {
             semanticError("Variable already declared", line);
         }
         
-        Symbole* sym = creerSymbole($2.str, currentType.baseType);
-        sym->isConst = currentType.isConst;
+        // Convert the type token to string
+        char* typeStr;
+        switch($1) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        
+        Symbole* sym = creerSymbole(
+            VARIABLE,    // category
+            $2,         // name
+            typeStr,    // type
+            "",         // initial value
+            line,       // line number
+            0          // memory address
+        );
         insererSymbole(TS, sym);
     }
     | tableau SEMICOLON {printf("declaration correcte syntaxiquement\n");}
