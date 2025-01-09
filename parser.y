@@ -182,81 +182,292 @@ type:
         currentType.baseType = ENTIER;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = ENTIER;
+        $$ = 1;
     }
     | FLOTTANT {
         currentType.baseType = FLOTTANT;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = FLOTTANT;
+        $$ = 2;
     }
     | STRING {
         currentType.baseType = STRING;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = STRING;
+        $$ = 4;
     }
     | CHAR {
         currentType.baseType = CHAR;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = CHAR;
+        $$ = 3;
     }
     | BOOLEAN {
         currentType.baseType = BOOLEAN;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = BOOLEAN;
+        $$ = 5;
     }
     | CONST type {
         currentType.isConst = true;
-        $$ = $2;
+        $$ = 0;
     }
     ;
 
 
 tableau :
-    TABLE ID DEB_TABLEAU INT FIN_TABLEAU
+    TABLE ID DEB_TABLEAU INT FIN_TABLEAU{
+        currentType.baseType = TABLEAU;
+        currentType.isArray = true;
+        currentType.isConst = false;
+        $$ = 6;
+    }
     ;
 
 type_Struct : 
     ENREGISTREMENT ID DEB_CORPS declarations FIN_CORPS
+    {
+        currentType.baseType = ENREGISTREMENT;
+        currentType.isArray = false;
+        currentType.isConst = false;
+        $$ = 7;
+    }
     ;
 valeur:
-    INT
-    | FLOAT
-    | CARACTERE 
-    | CHAINE
-    | TRUE
-    | FALSE
+    INT { 
+        char bff[255]; 
+        sprintf(bff, "%d", $1); 
+        $$.valeur = strdup(bff);
+        $$.type = 1;
+    }
+    | FLOAT {
+        char bff[255]; 
+        sprintf(bff, "%f", $1); 
+        $$.valeur = strdup(bff);
+        $$.type = 2;
+    }
+    | CARACTERE {
+        $$.valeur = strdup($1);
+        $$.type = 3;
+    }
+    | CHAINE {
+        char bff[255]; 
+        sprintf(bff, "%c", $1); 
+        $$.valeur = strdup(bff);
+        $$.type = 4;
+    }
+    | TRUE {
+        $$.valeur = strdup("vrai");
+        $$.type = 5;
+    }
+    | FALSE {
+        $$.valeur = strdup("faux");
+        $$.type = 5;
+    }
     ;
 variable:
     ID DEB_TABLEAU INT FIN_TABLEAU 
-    | ID DEB_TABLEAU ID FIN_TABLEAU 
     | ID POINTEUR ID
     | ID
     ;
 expression:
     valeur 
     | variable
-    | expression PLUS expression
-    | expression MOINS expression
-    | expression MULT expression
-    | expression DIV expression
-    | expression MOD expression
-    | expression PUISS expression 
-    | NOT expression 
-    | PAR_OUV expression PAR_FERM
-    | expression INF expression
-    | expression INF_EGAL expression
-    | expression SUPP expression
-    | expression SUPP_EGAL expression
-    | expression EQUAL expression
-    | expression NOT_EQUAL expression
-    | expression ET expression
-    | expression OU expression
-    ; 
+    | expression PLUS expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in addition", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
+                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
+                  TYPE_FLOTTANT : TYPE_ENTIER;
+    }
+    | expression MOINS expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in subtraction", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
+                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
+                  TYPE_FLOTTANT : TYPE_ENTIER;
+    }
+    | expression MULT expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in multiplication", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
+                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
+                  TYPE_FLOTTANT : TYPE_ENTIER;
+    }
+    | expression DIV expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        
+        // Vérification des types
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in division", line);
+            $$ = NULL;
+            return;
+        }
 
+        // Vérification de division par zéro pour les constantes
+        if (isConstant($3.valeur)) {
+            double value = getConstantValue($3.valeur);
+            if (value == 0.0) {
+                semanticError("Division by zero detected", line);
+                $$ = NULL;
+                return;
+            }
+        } else {
+            // Si ce n'est pas une constante, on ajoute un code de vérification runtime
+            $$.code = generateDivisionByZeroCheck($3.valeur);
+        }
+
+        // La division produit toujours un résultat flottant
+        $$.type = TYPE_FLOTTANT;
+    }
+    | expression MOD expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        
+        // Modulo seulement avec des entiers
+        if (strcmp(type1, TYPE_ENTIER) != 0 || strcmp(type2, TYPE_ENTIER) != 0) {
+            semanticError("Modulo operation requires integer operands", line);
+            $$ = NULL;
+            return;
+        }
+
+        // Vérification de modulo par zéro pour les constantes
+        if (isConstant($3.valeur)) {
+            int value = getConstantValue($3.valeur);
+            if (value == 0) {
+                semanticError("Modulo by zero detected", line);
+                $$ = NULL;
+                return;
+            }
+        } else {
+            // Si ce n'est pas une constante, on ajoute un code de vérification runtime
+            $$.code = generateModuloByZeroCheck($3.valeur);
+        }
+
+        $$.type = TYPE_ENTIER;
+    }
+    | expression PUISS expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in power operation", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
+                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
+                  TYPE_FLOTTANT : TYPE_ENTIER;
+    }
+    | NOT expression {
+        char* type = getIdentifierType($2.valeur);
+        if (strcmp(type, TYPE_ENTIER) != 0) {
+            semanticError("Logical NOT operation requires integer operand", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | PAR_OUV expression PAR_FERM {
+        $$.type = $2.type;
+        $$.code = $2.code;
+    }
+    | expression INF expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in comparison", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression INF_EGAL expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in comparison", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression SUPP expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in comparison", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression SUPP_EGAL expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in comparison", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression EQUAL expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in equality comparison", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression NOT_EQUAL expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (!areTypesCompatible(type1, type2)) {
+            semanticError("Type mismatch in inequality comparison", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression ET expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (strcmp(type1, TYPE_ENTIER) != 0 || strcmp(type2, TYPE_ENTIER) != 0) {
+            semanticError("Logical AND operation requires integer operands", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    | expression OU expression {
+        char* type1 = getIdentifierType($1.valeur);
+        char* type2 = getIdentifierType($3.valeur);
+        if (strcmp(type1, TYPE_ENTIER) != 0 || strcmp(type2, TYPE_ENTIER) != 0) {
+            semanticError("Logical OR operation requires integer operands", line);
+            $$ = NULL;
+            return;
+        }
+        $$.type = TYPE_ENTIER;
+    }
+    ;
 incrementation:
     variable INCREM 
     | variable DECREM
@@ -272,8 +483,8 @@ declaration:
         Symbole* found;
         if (rechercherSymbole(TS, $2, &found)) {
             semanticError("Variable already declared", line);
+            $$ = NULL;
         }
-        
         // Convert the type token to string
         char* typeStr;
         switch($1) {
@@ -294,6 +505,7 @@ declaration:
             0          // memory address
         );
         insererSymbole(TS, sym);
+        $$=sym;
     }
     | tableau SEMICOLON {printf("declaration correcte syntaxiquement\n");}
     | type_Struct SEMICOLON {printf("declaration correcte syntaxiquement\n");}
