@@ -3,17 +3,17 @@
     #include <stdlib.h>
     #include <stdbool.h>
     #include <math.h>
-    #include "TableSymbole.h"
+    #include "symbolTable.h"
     #include "quadruplet.h"
     #include "pile.h"
 
     //declarations 
-    SymbolTable *TS;
+    TableSymbole *TS;
     qTable *TQ;
     qPile *P;
 
     qNoeud* quad;
-    Symbol* node;
+    Symbole* node;
 
     int sauvLabel;
 
@@ -72,7 +72,6 @@ struct {
 %token  VIRGULE 
 
 %type<type> type
-%type<type> valeur
 %type<structure> tableau
 %type<structure> type_Struct
 %type<structure> variable
@@ -103,7 +102,7 @@ programme:
  {
         // initialisation des table des symboles et table des quadruplets 
         // et la pile de manipulation des quadruplets
-        TS = createSymbolTable() ;  
+        TS = creerTableSymbole();  
         TQ = initialiserTQ() ;
         P = initialiserP();
 
@@ -112,10 +111,11 @@ programme:
         qC++;
         quad = creer_Q("fin", "", "", "", qC);
         inserer_TQ(TQ, quad); 
-        afficher(TS); // afficher TS pour confirmer
+        afficherTableSymbole(TS); // afficher TS pour confirmer
         afficherTQ(TQ);  // afficher TQ pour confirmer
         afficherTQDansFichier(TQ, "output.txt");
         printf("\nProgramme accepte.");
+    }
     ;
 
 type :
@@ -311,3 +311,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
