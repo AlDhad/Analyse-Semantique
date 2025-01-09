@@ -192,14 +192,43 @@ programme:
     }
     ;
 
-type :
-    ENTIER
-    | FLOTTANT
-    | STRING
-    | CHAR
-    | CONST
-    | BOOLEAN
+type:
+    ENTIER {
+        currentType.baseType = ENTIER;
+        currentType.isArray = false;
+        currentType.isConst = false;
+        $$ = ENTIER;
+    }
+    | FLOTTANT {
+        currentType.baseType = FLOTTANT;
+        currentType.isArray = false;
+        currentType.isConst = false;
+        $$ = FLOTTANT;
+    }
+    | STRING {
+        currentType.baseType = STRING;
+        currentType.isArray = false;
+        currentType.isConst = false;
+        $$ = STRING;
+    }
+    | CHAR {
+        currentType.baseType = CHAR;
+        currentType.isArray = false;
+        currentType.isConst = false;
+        $$ = CHAR;
+    }
+    | BOOLEAN {
+        currentType.baseType = BOOLEAN;
+        currentType.isArray = false;
+        currentType.isConst = false;
+        $$ = BOOLEAN;
+    }
+    | CONST type {
+        currentType.isConst = true;
+        $$ = $2;
+    }
     ;
+
 
 tableau :
     TABLE ID DEB_TABLEAU INT FIN_TABLEAU
