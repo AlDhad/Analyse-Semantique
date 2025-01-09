@@ -30,30 +30,31 @@ dquote "\""
      return FIN; 
 }
 "صحيح"     { 
-     printf("nombre entier \n ");
      linecol=linecol+4;
-     yylval.intv = atoi(yytext);
      return ENTIER; 
 }
 
 "عشري"     {
-    printf("nombre flottant \n ");
-    linecol=linecol+4;
-    yylval.flt = atof(yytext); 
+    yylval.type = 2; 
+    linecol=linecol+4; 
     return FLOTTANT; }
 "منطقي"   { 
      linecol=linecol+5;
+     yylval.type = 5;
      return BOOLEAN; }
 "نص"      { 
     linecol=linecol+2;
+    yylval.type = 4;
     strcpy(yylval.str,yytext); 
     return STRING; }
 "حرف"      { 
     linecol=linecol+3;
+    yylval.type = 3; 
     yylval.charv = yytext[0]; 
     return CHAR; }
 "ثابت"     { 
      linecol=linecol+4;
+     yylval.type = 0; 
      return CONST; }
 "إذا"     { 
      linecol=linecol+3;
@@ -87,9 +88,11 @@ dquote "\""
     return FONCTION; }
 "صح"       { 
      linecol=linecol+2;
+     yylval.boolean = true;
      return TRUE; }
 "خطأ"      {
      linecol=linecol+3;
+     yylval.boolean = false; 
      return FALSE; }
 "لا شيء"  {
     linecol=linecol+6;
@@ -113,18 +116,22 @@ dquote "\""
 
 {quote}[^\"]*{quote}   { 
      linecol=linecol+yyleng;
+     strcpy(yylval.str,yytext);
      return CHAINE; }
 {dquote}[^\"]*{dquote}       {
      linecol=linecol+yyleng;
+     strcpy(yylval.str,yytext);
      return CHAINE; }
 [0-9]+      { 
     linecol=linecol+yyleng;
+    yylval.intv = atoi(yytext);
     return INT; }
 [0-9]+"."[0-9]* {
       linecol=linecol+yyleng; 
+      yylval.flt = atof(yytext);
       return FLOAT; }
 {lettre}{lettre}*  {
-    printf("identifiant \n");
+     strcpy(yylval.str,yytext);
      linecol=linecol+yyleng;
      return ID; }
 "//".*          { 
