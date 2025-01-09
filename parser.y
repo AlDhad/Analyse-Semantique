@@ -1,6 +1,12 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
+    #include <stdbool.h>
+    #include <math.h>
+    #include "TableSymbole.h"
+    #include "quadruplet.h"
+    #include "pile.h"
+
     extern FILE *yyin;
     int yylex();
     void yyerror(const char *s);
@@ -19,6 +25,11 @@ char str[100];
 char charv;
 int intv ; 
 float flt;
+struct {
+        char* valeur;
+        char* nom;
+        int type;
+    } structure;
 }
 
 %token  DEBUT FIN WHILE FOR
@@ -39,6 +50,19 @@ float flt;
 %token  FROM
 %token  TO
 %token  VIRGULE 
+
+%type<type> type
+%type<type> valeur
+%type<structure> tableau
+%type<structure> type_Struct
+%type<structure> variable
+%type<structure> expression
+%type<structure> declaration
+%type<structure> incrementation
+%type<structure> assignment
+%type<structure> parametreCall
+%type<structure> fonction
+%type<structure> parametre
 
 %right OU
 %right ET
@@ -69,7 +93,7 @@ type :
     ;
 
 tableau :
-    type ID DEB_TABLEAU INT FIN_TABLEAU
+    TABLE ID DEB_TABLEAU INT FIN_TABLEAU
     ;
 
 type_Struct : 
