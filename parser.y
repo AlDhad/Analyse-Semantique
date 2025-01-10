@@ -352,14 +352,491 @@ expression:
     | expression PUISS expression 
     | NOT expression 
     | PAR_OUV expression PAR_FERM
-    | expression INF expression
-    | expression INF_EGAL expression
-    | expression SUPP expression
-    | expression SUPP_EGAL expression
-    | expression EQUAL expression
-    | expression NOT_EQUAL expression
-    | expression ET expression
-    | expression OU expression
+
+    | expression INF expression {
+        printf("I am inside comparison (less than)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            comparison_result = atoi(val1) < atoi(val2);
+        } else if (($1.type == ENTIER && $3.type == FLOTTANT) || 
+                ($1.type == FLOTTANT && $3.type == ENTIER) || 
+                ($1.type == FLOTTANT && $3.type == FLOTTANT)) {
+            comparison_result = atof(val1) < atof(val2);
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            comparison_result = val1[0] < val2[0];
+        } else if ($1.type == STRING && $3.type == STRING) {
+            comparison_result = strcmp(val1, val2) < 0;
+        } else if (($1.type == STRING && $3.type == CHAR) || ($1.type == CHAR && $3.type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf($$.valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("<", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+
+    | expression INF_EGAL expression {
+
+        printf("I am inside comparison (less than or equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            comparison_result = atoi(val1) <= atoi(val2);
+        } else if (($1.type == ENTIER && $3.type == FLOTTANT) || 
+                ($1.type == FLOTTANT && $3.type == ENTIER) || 
+                ($1.type == FLOTTANT && $3.type == FLOTTANT)) {
+            comparison_result = atof(val1) <= atof(val2);
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            comparison_result = val1[0] <= val2[0];
+        } else if ($1.type == STRING && $3.type == STRING) {
+            comparison_result = strcmp(val1, val2) <= 0;
+        } else if (($1.type == STRING && $3.type == CHAR) || ($1.type == CHAR && $3.type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf($$.valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("<=", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression SUPP expression {
+
+        printf("I am inside comparison (greater than)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+           // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            comparison_result = atoi(val1) > atoi(val2);
+        } else if (($1.type == ENTIER && $3.type == FLOTTANT) || 
+                ($1.type == FLOTTANT && $3.type == ENTIER) || 
+                ($1.type == FLOTTANT && $3.type == FLOTTANT)) {
+            comparison_result = atof(val1) > atof(val2);
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            comparison_result = val1[0] < val2[0];
+        } else if ($1.type == STRING && $3.type == STRING) {
+            comparison_result = strcmp(val1, val2) > 0;
+        } else if (($1.type == STRING && $3.type == CHAR) || ($1.type == CHAR && $3.type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf($$.valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q(">", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression SUPP_EGAL expression {
+
+        printf("I am inside comparison (greater than or equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            comparison_result = atoi(val1) >= atoi(val2);
+        } else if (($1.type == ENTIER && $3.type == FLOTTANT) || 
+                ($1.type == FLOTTANT && $3.type == ENTIER) || 
+                ($1.type == FLOTTANT && $3.type == FLOTTANT)) {
+            comparison_result = atof(val1) >= atof(val2);
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            comparison_result = val1[0] < val2[0];
+        } else if ($1.type == STRING && $3.type == STRING) {
+            comparison_result = strcmp(val1, val2) >= 0;
+        } else if (($1.type == STRING && $3.type == CHAR) || ($1.type == CHAR && $3.type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf($$.valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q(">=", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression EQUAL expression {
+
+        printf("I am inside comparison (equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            comparison_result = atoi(val1) == atoi(val2);
+        } else if (($1.type == ENTIER && $3.type == FLOTTANT) || 
+                ($1.type == FLOTTANT && $3.type == ENTIER) || 
+                ($1.type == FLOTTANT && $3.type == FLOTTANT)) {
+            comparison_result = atof(val1) == atof(val2);
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            comparison_result = val1[0] == val2[0];
+        } else if ($1.type == STRING && $3.type == STRING) {
+            comparison_result = strcmp(val1, val2) == 0;
+        } else if (($1.type == STRING && $3.type == CHAR) || ($1.type == CHAR && $3.type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf($$.valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("==", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression NOT_EQUAL expression {
+
+        printf("I am inside comparison (not equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            comparison_result = atoi(val1) != atoi(val2);
+        } else if (($1.type == ENTIER && $3.type == FLOTTANT) || 
+                ($1.type == FLOTTANT && $3.type == ENTIER) || 
+                ($1.type == FLOTTANT && $3.type == FLOTTANT)) {
+            comparison_result = atof(val1) != atof(val2);
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            comparison_result = val1[0] != val2[0];
+        } else if ($1.type == STRING && $3.type == STRING) {
+            comparison_result = strcmp(val1, val2) != 0;
+        } else if (($1.type == STRING && $3.type == CHAR) || ($1.type == CHAR && $3.type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf($$.valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("!=", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression ET expression {
+
+        printf("I am inside logical AND\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform logical AND based on types
+        int result = 0; // 1 if true, 0 otherwise
+        if ($1.type == BOOLEAN && $3.type == BOOLEAN) {
+            result = (strcmp(val1, "true") == 0) && (strcmp(val2, "true") == 0);
+        } else {
+            semanticError("Invalid types for logical AND", line);
+        }
+
+        // Store the result of the logical AND
+        sprintf($$.valeur, "%d", result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of logical AND is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("AND", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression OU expression {
+
+        printf("I am inside logical OR\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = $1.valeur;
+        }
+
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = $3.valeur;
+        }
+
+        // Perform logical OR based on types
+        int result = 0; // 1 if true, 0 otherwise
+        if ($1.type == BOOLEAN && $3.type == BOOLEAN) {
+            result = (strcmp(val1, "true") == 0) || (strcmp(val2, "true") == 0);
+        } else {
+            semanticError("Invalid types for logical OR", line);
+        }
+
+        // Store the result of the logical OR
+        sprintf($$.valeur, "%d", result); // Store as "1" (true) or "0" (false)
+        $$.type = BOOLEAN; // Result of logical OR is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("OR", 
+                    $1.nom ? $1.nom : $1.valeur, 
+                    $3.nom ? $3.nom : $3.valeur, 
+                    $$.valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     ; 
 
 incrementation:
