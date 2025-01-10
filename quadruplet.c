@@ -5,6 +5,7 @@ qTable* initialiserTQ() {
     qTable* TQ = (qTable*)malloc(sizeof(qTable));
     if (TQ != NULL) {
         TQ->tete = NULL;
+        TQ->queue = NULL;
         TQ->nb = 0;
     }
     return TQ;
@@ -12,7 +13,7 @@ qTable* initialiserTQ() {
 
 void afficherTQ(qTable *TQ) {
     qNoeud* current = TQ->tete;
-     printf("\nLes quadruplets :\n");
+    printf("\nLes quadruplets :\n");
     while (current != NULL) {
         afficherQ(current);
         current = current->next;
@@ -27,13 +28,19 @@ void supprimer_TQ(qTable *TQ) {
         free(temp);
     }
     TQ->tete = NULL;
+    TQ->queue = NULL;
     TQ->nb = 0;
 }
 
 void inserer_TQ(qTable *TQ, qNoeud *Q) {
     if (TQ != NULL && Q != NULL) {
-        Q->next = TQ->tete;
-        TQ->tete = Q;
+        Q->next = NULL;
+        if (TQ->queue != NULL) {
+            TQ->queue->next = Q;
+        } else {
+            TQ->tete = Q;
+        }
+        TQ->queue = Q;
         TQ->nb++;
     }
 }
@@ -66,8 +73,7 @@ void afficherQ(qNoeud* Q) {
     if (Q != NULL) {
         printf("Adresse: %d, Operateur: %s, Operande1: %s, Operande2: %s, Resultat: %s\n",
                Q->adresse, Q->operateur, Q->operande1, Q->operande2, Q->resultat);
-    }
-    else {
+    } else {
         printf("\n Empty ! \n");
     }
 }
@@ -95,8 +101,7 @@ void afficherQDansFichier(qNoeud* Q, FILE *fichier) {
     if (Q != NULL) {
         fprintf(fichier, "%d -( %s,  %s,  %s,  %s)\n",
                 Q->adresse, Q->operateur, Q->operande1, Q->operande2, Q->resultat);
-    }
-    else {
+    } else {
         fprintf(fichier, "\n Empty ! \n");
     }
 }

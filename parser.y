@@ -297,7 +297,6 @@ expression:
     valeur  
     | variable
     | expression PLUS expression {
-        printf("i am inside addition\n");
         char bff[255]; 
         Symbole* found1;
         Symbole* found2;
@@ -315,7 +314,6 @@ expression:
         val2 = $3.valeur;            
         // Perform addition based on types
         if ($1.type == ENTIER && $3.type == ENTIER) {
-            printf("i am inside addition\n");
             int result = atoi(val1) + atoi(val2);
             sprintf($$.valeur, "%d", result);
             $$.type = ENTIER;
@@ -349,7 +347,6 @@ expression:
         afficherTQDansFichier(TQ, "output.txt");
     }
     | expression MOINS expression {
-        printf("i am inside subtraction\n");
         char bff[255]; 
         Symbole* found1;
         Symbole* found2;
@@ -367,7 +364,6 @@ expression:
         val2 = $3.valeur;            
         // Perform subtraction based on types
         if ($1.type == ENTIER && $3.type == ENTIER) {
-            printf("i am inside subtraction\n");
             int result = atoi(val1) - atoi(val2);
             sprintf($$.valeur, "%d", result);
             $$.type = ENTIER;
@@ -400,10 +396,206 @@ expression:
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
-    | expression MULT expression
-    | expression DIV expression
-    | expression MOD expression
-    | expression PUISS expression 
+    | expression MULT expression {
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
+        // Perform multiplication based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            int result = atoi(val1) * atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            float result = atof(val1) * atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else if (($1.type == FLOTTANT && $3.type == ENTIER) || ($1.type == ENTIER && $3.type == FLOTTANT)) {
+            float result = atof(val1) * atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for multiplication", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("*", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression DIV expression {
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
+        // Perform division based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            if (atoi(val2) == 0) {
+                semanticError("Division by zero", line);
+            }
+            int result = atoi(val1) / atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            if (atof(val2) == 0.0) {
+                semanticError("Division by zero", line);
+            }
+            float result = atof(val1) / atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else if (($1.type == FLOTTANT && $3.type == ENTIER) || ($1.type == ENTIER && $3.type == FLOTTANT)) {
+            if (atof(val2) == 0.0) {
+                semanticError("Division by zero", line);
+            }
+            float result = atof(val1) / atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for division", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("/", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression MOD expression {
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
+        // Perform modulo based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            if (atoi(val2) == 0) {
+                semanticError("Modulo by zero", line);
+            }
+            int result = atoi(val1) % atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else {
+            semanticError("Invalid types for modulo", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("%", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+    | expression PUISS expression {
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
+        // Perform power based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            int result = pow(atoi(val1), atoi(val2));
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            float result = pow(atof(val1), atof(val2));
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for power", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("^", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     | NOT expression 
     | PAR_OUV expression PAR_FERM
     | expression INF expression

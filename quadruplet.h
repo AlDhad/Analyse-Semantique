@@ -20,6 +20,7 @@ typedef struct qNoeud
 typedef struct qTable
 {
     struct qNoeud *tete;
+    struct qNoeud *queue;
     int nb;
 
 } qTable;
