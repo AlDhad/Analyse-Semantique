@@ -43,10 +43,10 @@
     int sauvline = 1;
 
     #define TYPE_ENTIER "ENTIER"
-#define TYPE_FLOTTANT "FLOTTANT"
-#define TYPE_CHAR "CHAR"
-#define TYPE_STRING "STRING"
-#define TYPE_BOOLEAN "BOOLEAN"
+    #define TYPE_FLOTTANT "FLOTTANT"
+    #define TYPE_CHAR "CHAR"
+    #define TYPE_STRING "STRING"
+    #define TYPE_BOOLEAN "BOOLEAN"
 
 // Modified type checking function to work with your symbol table
 bool areTypesCompatible(const char* type1, const char* type2) {
@@ -275,7 +275,7 @@ variable:
         $$.type = ENTIER;  // modify based on your needs
     }
     | ID {
-        $$.nom = $1;
+        $$.nom = strdup($1);
         Symbole* found;
         if (rechercherSymbole(TS, $1, &found)) {
             switch(found->type[0]) {
@@ -286,11 +286,15 @@ variable:
                 case 'B': $$.type = BOOLEAN; break;
                 default: $$.type = ENTIER;
             }
+            $$.valeur = strdup(found->valeur);
+            }
+            else{
+                semanticError("Variable non declaree", line);
+            }
         }
-    }
     ;
 expression:
-    valeur 
+    valeur  
     | variable
     | expression PLUS expression {
         printf("i am inside addition\n");
@@ -307,24 +311,19 @@ expression:
 
         // Get values for operands
         char *val1, *val2;
-        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
-            val1 = found1->valeur;
-        } else {
-            val1 = $1.valeur;
-        }
-
-        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
-            val2 = found2->valeur;
-        } else {
-            val2 = $3.valeur;
-        }
-
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
         // Perform addition based on types
         if ($1.type == ENTIER && $3.type == ENTIER) {
+            printf("i am inside addition\n");
             int result = atoi(val1) + atoi(val2);
             sprintf($$.valeur, "%d", result);
             $$.type = ENTIER;
         } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            float result = atof(val1) + atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else if (($1.type == FLOTTANT && $3.type == ENTIER) || ($1.type == ENTIER && $3.type == FLOTTANT)) {
             float result = atof(val1) + atof(val2);
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
@@ -334,18 +333,73 @@ expression:
 
         // Generate quadruplet
         qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
         quad = creer_Q("+", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
-                      $$.valeur,
-                      qC);
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
         afficherTableSymbole(TS);
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
-    | expression MOINS expression
+    | expression MOINS expression {
+        printf("i am inside subtraction\n");
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
+        // Perform subtraction based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            printf("i am inside subtraction\n");
+            int result = atoi(val1) - atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            float result = atof(val1) - atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else if (($1.type == FLOTTANT && $3.type == ENTIER) || ($1.type == ENTIER && $3.type == FLOTTANT)) {
+            float result = atof(val1) - atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for subtraction", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("-", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     | expression MULT expression
     | expression DIV expression
     | expression MOD expression
