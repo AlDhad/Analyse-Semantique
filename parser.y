@@ -9,6 +9,7 @@
     #include "pile.h"
     #include  <ctype.h>
 
+
     //declarations 
 
     typedef struct {
@@ -100,7 +101,7 @@ TypeInfo currentType;
     int loopNestingLevel = 0;
 void semanticError(const char* message, int line) { 
     fprintf(stderr, "Semantic error at line %d: %s\n", line, message); 
-    exit(1); 
+    exit(1);
 }
 %}
 
@@ -143,6 +144,7 @@ struct {
 %token  VIRGULE 
 
 %type<type> type
+%type<structure> valeur
 %type<structure> tableau
 %type<structure> type_Struct
 %type<structure> variable
@@ -191,292 +193,175 @@ type:
         currentType.baseType = ENTIER;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = 1;
+        $$ = ENTIER;
     }
     | FLOTTANT {
         currentType.baseType = FLOTTANT;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = 2;
+        $$ = FLOTTANT;
     }
     | STRING {
         currentType.baseType = STRING;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = 4;
+        $$ = STRING;
     }
     | CHAR {
         currentType.baseType = CHAR;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = 3;
+        $$ = CHAR;
     }
     | BOOLEAN {
         currentType.baseType = BOOLEAN;
         currentType.isArray = false;
         currentType.isConst = false;
-        $$ = 5;
+        $$ = BOOLEAN;
     }
     | CONST type {
         currentType.isConst = true;
-        $$ = 0;
+        $$ = $2;
     }
     ;
 
 
 tableau :
-    TABLE ID DEB_TABLEAU INT FIN_TABLEAU{
-        currentType.baseType = TABLEAU;
-        currentType.isArray = true;
-        currentType.isConst = false;
-        $$ = 6;
-    }
+    TABLE ID DEB_TABLEAU INT FIN_TABLEAU
     ;
 
 type_Struct : 
     ENREGISTREMENT ID DEB_CORPS declarations FIN_CORPS
-    {
-        currentType.baseType = ENREGISTREMENT;
-        currentType.isArray = false;
-        currentType.isConst = false;
-        $$ = 7;
-    }
     ;
 valeur:
     INT { 
-        char bff[255]; 
-        sprintf(bff, "%d", $1); 
-        $$.valeur = strdup(bff);
-        $$.type = 1;
+        $$.type = ENTIER;
+        char buffer[256];
+        sprintf(buffer, "%d", $1);
+        $$.valeur = strdup(buffer);
     }
     | FLOAT {
-        char bff[255]; 
-        sprintf(bff, "%f", $1); 
-        $$.valeur = strdup(bff);
-        $$.type = 2;
+        $$.type = FLOTTANT;
+        char buffer[256];
+        sprintf(buffer, "%f", $1);
+        $$.valeur = strdup(buffer);
     }
     | CARACTERE {
-        $$.valeur = strdup($1);
-        $$.type = 3;
+        $$.type = CHAR;
+        char buffer[256];
+        sprintf(buffer, "%c", $1);
+        $$.valeur = strdup(buffer);
     }
     | CHAINE {
-        char bff[255]; 
-        sprintf(bff, "%c", $1); 
-        $$.valeur = strdup(bff);
-        $$.type = 4;
+        $$.type = STRING;
+        $$.valeur = strdup($1);
     }
     | TRUE {
-        $$.valeur = strdup("vrai");
-        $$.type = 5;
+        $$.type = BOOLEAN;
+        $$.valeur = strdup("true");
     }
     | FALSE {
-        $$.valeur = strdup("faux");
-        $$.type = 5;
+        $$.type = BOOLEAN;
+        $$.valeur = strdup("false");
     }
     ;
 variable:
-    ID DEB_TABLEAU INT FIN_TABLEAU 
-    | ID POINTEUR ID
-    | ID
+    ID DEB_TABLEAU INT FIN_TABLEAU {
+        $$.nom = $1;
+        $$.type = ENTIER;  // assuming array of integers
+    }
+    | ID POINTEUR ID {
+        $$.nom = $1;
+        $$.type = ENTIER;  // modify based on your needs
+    }
+    | ID {
+        $$.nom = $1;
+        Symbole* found;
+        if (rechercherSymbole(TS, $1, &found)) {
+            switch(found->type[0]) {
+                case 'E': $$.type = ENTIER; break;
+                case 'F': $$.type = FLOTTANT; break;
+                case 'S': $$.type = STRING; break;
+                case 'C': $$.type = CHAR; break;
+                case 'B': $$.type = BOOLEAN; break;
+                default: $$.type = ENTIER;
+            }
+        }
+    }
     ;
 expression:
     valeur 
     | variable
     | expression PLUS expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in addition", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
-                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
-                  TYPE_FLOTTANT : TYPE_ENTIER;
-    }
-    | expression MOINS expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in subtraction", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
-                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
-                  TYPE_FLOTTANT : TYPE_ENTIER;
-    }
-    | expression MULT expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in multiplication", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
-                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
-                  TYPE_FLOTTANT : TYPE_ENTIER;
-    }
-    | expression DIV expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
+        printf("i am inside addition\n");
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
         
-        // Vérification des types
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in division", line);
-            $$ = NULL;
-            return;
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
         }
 
-        // Vérification de division par zéro pour les constantes
-        if (isConstant($3.valeur)) {
-            double value = getConstantValue($3.valeur);
-            if (value == 0.0) {
-                semanticError("Division by zero detected", line);
-                $$ = NULL;
-                return;
-            }
+        // Get values for operands
+        char *val1, *val2;
+        if ($1.nom != NULL && rechercherSymbole(TS, $1.nom, &found1)) {
+            val1 = found1->valeur;
         } else {
-            // Si ce n'est pas une constante, on ajoute un code de vérification runtime
-            $$.code = generateDivisionByZeroCheck($3.valeur);
+            val1 = $1.valeur;
         }
 
-        // La division produit toujours un résultat flottant
-        $$.type = TYPE_FLOTTANT;
-    }
-    | expression MOD expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        
-        // Modulo seulement avec des entiers
-        if (strcmp(type1, TYPE_ENTIER) != 0 || strcmp(type2, TYPE_ENTIER) != 0) {
-            semanticError("Modulo operation requires integer operands", line);
-            $$ = NULL;
-            return;
-        }
-
-        // Vérification de modulo par zéro pour les constantes
-        if (isConstant($3.valeur)) {
-            int value = getConstantValue($3.valeur);
-            if (value == 0) {
-                semanticError("Modulo by zero detected", line);
-                $$ = NULL;
-                return;
-            }
+        if ($3.nom != NULL && rechercherSymbole(TS, $3.nom, &found2)) {
+            val2 = found2->valeur;
         } else {
-            // Si ce n'est pas une constante, on ajoute un code de vérification runtime
-            $$.code = generateModuloByZeroCheck($3.valeur);
+            val2 = $3.valeur;
         }
 
-        $$.type = TYPE_ENTIER;
-    }
-    | expression PUISS expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in power operation", line);
-            $$ = NULL;
-            return;
+        // Perform addition based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            int result = atoi(val1) + atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            float result = atof(val1) + atof(val2);
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for addition", line);
         }
-        $$.type = (strcmp(type1, TYPE_FLOTTANT) == 0 || 
-                  strcmp(type2, TYPE_FLOTTANT) == 0) ? 
-                  TYPE_FLOTTANT : TYPE_ENTIER;
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("+", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.valeur,
+                      qC);
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
     }
-    | NOT expression {
-        char* type = getIdentifierType($2.valeur);
-        if (strcmp(type, TYPE_ENTIER) != 0) {
-            semanticError("Logical NOT operation requires integer operand", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | PAR_OUV expression PAR_FERM {
-        $$.type = $2.type;
-        $$.code = $2.code;
-    }
-    | expression INF expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in comparison", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression INF_EGAL expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in comparison", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression SUPP expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in comparison", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression SUPP_EGAL expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in comparison", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression EQUAL expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in equality comparison", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression NOT_EQUAL expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (!areTypesCompatible(type1, type2)) {
-            semanticError("Type mismatch in inequality comparison", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression ET expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (strcmp(type1, TYPE_ENTIER) != 0 || strcmp(type2, TYPE_ENTIER) != 0) {
-            semanticError("Logical AND operation requires integer operands", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    | expression OU expression {
-        char* type1 = getIdentifierType($1.valeur);
-        char* type2 = getIdentifierType($3.valeur);
-        if (strcmp(type1, TYPE_ENTIER) != 0 || strcmp(type2, TYPE_ENTIER) != 0) {
-            semanticError("Logical OR operation requires integer operands", line);
-            $$ = NULL;
-            return;
-        }
-        $$.type = TYPE_ENTIER;
-    }
-    ;
+    | expression MOINS expression
+    | expression MULT expression
+    | expression DIV expression
+    | expression MOD expression
+    | expression PUISS expression 
+    | NOT expression 
+    | PAR_OUV expression PAR_FERM
+    | expression INF expression
+    | expression INF_EGAL expression
+    | expression SUPP expression
+    | expression SUPP_EGAL expression
+    | expression EQUAL expression
+    | expression NOT_EQUAL expression
+    | expression ET expression
+    | expression OU expression
+    ; 
+
 incrementation:
     variable INCREM 
     | variable DECREM
@@ -488,12 +373,12 @@ declarations:
     ;
 
 declaration:
-    type ID SEMICOLON {
+    type ID  {
         Symbole* found;
         if (rechercherSymbole(TS, $2, &found)) {
             semanticError("Variable already declared", line);
-            $$ = NULL;
         }
+        
         // Convert the type token to string
         char* typeStr;
         switch($1) {
@@ -514,8 +399,9 @@ declaration:
             0          // memory address
         );
         insererSymbole(TS, sym);
-        $$=sym;
-    }
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+    } SEMICOLON
     | tableau SEMICOLON {printf("declaration correcte syntaxiquement\n");}
     | type_Struct SEMICOLON {printf("declaration correcte syntaxiquement\n");}
     ;
@@ -544,6 +430,7 @@ instructions:
     | instructions instruction 
     ;   
 instruction:
+    declaration
     | assignment 
     | COMMENT
     | COMMENT_PLUS
@@ -571,7 +458,45 @@ retourner:
 
 assignment:
     parametre ASSIGN expression SEMICOLON
-    | ID ASSIGN expression SEMICOLON 
+    | ID ASSIGN expression {
+        Symbole* found;
+        if (rechercherSymbole(TS, $1, &found)) { // is declared
+            if (found->categorie == VARIABLE) {  
+                qC++;
+                
+                // Create a buffer for the value
+                char buffer[256];
+                sprintf(buffer, "%s", $3.valeur ? $3.valeur : "");
+                
+                // Update the symbol's value
+                SetValueSymbol(found, buffer);
+                
+                // Create quadruplet
+                quad = creer_Q(":=", $1, " ", buffer, qC);
+                inserer_TQ(TQ, quad);
+                 afficherTQ(TQ);
+                
+                // Convert expression type to string for comparison
+                char* exprType = NULL;
+                switch($3.type) {
+                    case ENTIER: exprType = TYPE_ENTIER; break;
+                    case FLOTTANT: exprType = TYPE_FLOTTANT; break;
+                    case CHAR: exprType = TYPE_CHAR; break;
+                    case STRING: exprType = TYPE_STRING; break;
+                    case BOOLEAN: exprType = TYPE_BOOLEAN; break;
+                    default: exprType = TYPE_ENTIER;
+                }
+                
+                if (!areTypesCompatible(found->type, exprType)) {
+                    semanticError("Type incompatible dans l'affectation.", line);
+                }
+            } else {
+                semanticError("Identifier is not a variable", line);
+            }
+        } else {
+            semanticError("Variable non declaree", line);
+        }
+    } SEMICOLON
     | parametre ASSIGN call SEMICOLON
     | ID ASSIGN call SEMICOLON
     ;

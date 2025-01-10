@@ -189,3 +189,46 @@ void afficherInfoFonction(Symbole *symbole) {
 //     afficherInfoFonction(symbole);
 //     return 0;
 // }
+int isIntOrfloat(int x){
+    int result = 0 ; 
+    if (x == 1 || x == 2){
+        result = 1 ; 
+    }
+    return result ; 
+}
+
+int isInt(int x){
+    int result = 0 ; 
+    if (x == 1){
+        result = 1 ; 
+    }
+    return result ; 
+}
+
+
+int isFlt(int x){
+    int result = 0 ; 
+    if (x == 2){
+        result = 1 ; 
+    }
+    return result ; 
+}
+void SetTypeSymbol(Symbole* symbole, char* type) {
+    if (symbole != NULL) {
+        symbole->type = type;
+    }
+}
+
+void SetNomSymbol(Symbole* symbole, char* nom) {
+    if (symbole != NULL) {
+        free(symbole->nom);
+        symbole->nom = strdup(nom);
+    }
+}
+
+void SetValueSymbol(Symbole* symbole, char* value) {
+    if (symbole != NULL) {
+        free(symbole->valeur);
+        symbole->valeur = strdup(value);
+    }
+}

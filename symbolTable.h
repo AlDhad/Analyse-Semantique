@@ -66,5 +66,10 @@ bool rechercherSymbole(TableSymbole *table, const char *nom, Symbole **symboleTr
 void supprimerSymbole(TableSymbole *table, const char *nom);
 void ajouterParametre(InfoFonction *info, const char *nom, const char *type);
 void afficherInfoFonction(Symbole *symbole);
-
+int isIntOrfloat(int x);
+int isInt(int x);
+int isFlt(int x);
+void SetTypeSymbol(Symbole* symbole, char* type);
+void SetNomSymbol(Symbole* symbole, char* nom);
+void SetValueSymbol(Symbole* symbole, char* value);
 #endif
