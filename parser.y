@@ -7,6 +7,7 @@
     #include "symbolTable.h"
     #include "quadruplet.h"
     #include "pile.h"
+    #include  <ctype.h>
 
     //declarations 
 
@@ -92,6 +93,14 @@ bool isValidLiteralForType(const char* literal, const char* type) {
     }
     // Add more type checks as needed
     return false;
+}
+TypeInfo currentType; 
+    char currentFunction[256]; 
+    bool inLoop = false; 
+    int loopNestingLevel = 0;
+void semanticError(const char* message, int line) { 
+    fprintf(stderr, "Semantic error at line %d: %s\n", line, message); 
+    exit(1); 
 }
 %}
 
@@ -210,7 +219,7 @@ type:
     }
     | CONST type {
         currentType.isConst = true;
-        $$ = $2;
+        $$ = $;
     }
     ;
 

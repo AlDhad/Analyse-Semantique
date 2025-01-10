@@ -32,6 +32,7 @@ dquote "\""
      return FIN; 
 }
 "صحيح"     { 
+     yylval.type = 1; 
      linecol=linecol+4;
      return ENTIER; 
 }
@@ -51,8 +52,7 @@ dquote "\""
     return STRING; }
 "حرف"      { 
     linecol=linecol+3;
-    yylval.type = 3; 
-    yylval.charv = yytext[0]; 
+    yylval.type = 3;  
     return CHAR; }
 "ثابت"     { 
      linecol=linecol+4;
@@ -81,9 +81,11 @@ dquote "\""
      return INPUT; }
 "جدول"     { 
     linecol=linecol+4;
+    yylval.type = 6;
     return TABLE; }
 "سجل"      {
      linecol=linecol+3;
+     yylval.type = 7;
      return ENREGISTREMENT; }
 "دالة"     { 
     linecol=linecol+4;
