@@ -16,7 +16,7 @@ extern int sauvline;
 
 %option noyywrap
 
-lettre    [قفكهمنلءىوأ-ي]
+lettre    [قفكهعمنلءىوأ-ي]
 quote "'"
 dquote "\""
 
