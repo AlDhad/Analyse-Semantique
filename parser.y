@@ -998,12 +998,16 @@ loop:
 while_partie_une:
     WHILE PAR_OUV {
 
+        printf("I'm inside while\n");
+
         sauvDebut = qC;
         qC++;
     };
 
 while_partie_deux:
-    expression PAR_FERM {
+    expression{
+
+        printf("I'm inside while\n");
 
         if($1.type != BOOLEAN) {
             semanticError("Condition de boucle invalide", line);
@@ -1017,7 +1021,9 @@ while_partie_deux:
     };
 
 while_partie_trois:
-    corps {
+    PAR_FERM corps {
+
+        printf("I'm inside while\n");
 
         qC++;
         quad = pop(P); 
@@ -1051,7 +1057,7 @@ for_partie_deux:
         inserer_TQ(TQ, quad);
         push(P, quad);
         afficherTQ(TQ);
-        
+
     };
 
 for_partie_trois:
