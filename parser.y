@@ -1012,7 +1012,7 @@ while_partie_deux:
         qC++;
         quad = creer_Q("BZ", "fin", " ", $1.valeur, qC);
         inserer_TQ(TQ, quad);
-        pushP(P, qC);
+        push(P, quad);
         afficherTQ(TQ);
     };
 
@@ -1020,10 +1020,13 @@ while_partie_trois:
     corps {
 
         qC++;
-        quad = popP(P); 
+        quad = pop(P); 
         updateLabel(quad, qC+1);
         // Branchement inconditionnel vers Debut
-        quad = creer_Q("BR", sauvDebut, "", "", qC);
+        
+        char etiq[255];
+        sprintf(etiq, "%d", sauvDebut);
+        quad = creer_Q("BR", etiq, "", "", qC);
         inserer_TQ(TQ, quad);
         afficherTQ(TQ);
 
@@ -1039,45 +1042,30 @@ for_partie_une:
 for_partie_deux:
     ID FROM INT TO INT PAR_FERM {
 
-        Symbole* found;
-        if (rechercherSymbole(TS, $1, &found)) {
-            if (found->categorie == VARIABLE) {
-                qC++;
-                quad = creer_Q(":=", $1, " ", $3.valeur, qC);
-                inserer_TQ(TQ, quad);
-                afficherTQ(TQ);
-            } else {
-                semanticError("Identifier is not a variable", line);
-            }
-        } else {
-            semanticError("Variable non declaree", line);
+    if($1.type != BOOLEAN) {
+            semanticError("Condition de boucle invalide", line);
         }
-
-        qC++;
-        quad = creer_Q(">", $1, $5.valeur, "", qC);
-        inserer_TQ(TQ, quad);
-
-        if($1.type != ENTIER || $5.type != ENTIER) {
-            semanticError("Type incompatible dans la boucle for", line);
-        }
-
         // Branchement vers fin si condition n'est pas vrai
         qC++;
-        quad = creer_Q("BZ", "fin", " ", "", qC);
+        quad = creer_Q("BZ", "fin", " ", $1.valeur, qC);
         inserer_TQ(TQ, quad);
-        pushP(P, qC);
-
+        push(P, quad);
+        afficherTQ(TQ);
+        
     };
 
 for_partie_trois:
     corps {
 
         qC++;
-        quad = popP(P); 
+        quad = pop(P); 
         updateLabel(quad, qC+1);
 
         // Branchement inconditionnel vers Debut
-        quad = creer_Q("BR", sauvDebut, "", "", qC);
+
+        char etiq[255];
+        sprintf(etiq, "%d", sauvDebut);
+        quad = creer_Q("BR", etiq, "", "", qC);
         inserer_TQ(TQ, quad);
         afficherTQ(TQ);
 
