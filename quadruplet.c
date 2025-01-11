@@ -105,3 +105,12 @@ void afficherQDansFichier(qNoeud* Q, FILE *fichier) {
         fprintf(fichier, "\n Empty ! \n");
     }
 }
+void mettreAJourResultat(qTable *TQ, int adresse, const char *nouveauResultat) {
+    qNoeud* Q = rechercherTQ(TQ, adresse);
+    if (Q != NULL) {
+        strncpy(Q->resultat, nouveauResultat, sizeof(Q->resultat) - 1);
+        Q->resultat[sizeof(Q->resultat) - 1] = '\0'; // Ensure null-termination
+    } else {
+        printf("Quadruplet with address %d not found.\n", adresse);
+    }
+}

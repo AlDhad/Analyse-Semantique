@@ -178,7 +178,6 @@ programme:
         P = initialiserP();
     }
     functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS {
-        qC++;
         quad = creer_Q("fin", "", "", "", qC);
         inserer_TQ(TQ, quad); 
         afficherTableSymbole(TS); // afficher TS pour confirmer
@@ -602,15 +601,156 @@ expression:
     | expression INF_EGAL expression
     | expression SUPP expression
     | expression SUPP_EGAL expression
-    | expression EQUAL expression
+    | expression EQUAL expression {
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = $1.valeur;
+        val2 = $3.valeur;            
+        // Perform equality check based on types
+        if ($1.type == ENTIER && $3.type == ENTIER) {
+            bool result = atoi(val1) == atoi(val2);
+            sprintf($$.valeur, "%s", result ? "true" : "false");
+            $$.type = BOOLEAN;
+        } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
+            bool result = atof(val1) == atof(val2);
+            sprintf($$.valeur, "%s", result ? "true" : "false");
+            $$.type = BOOLEAN;
+        } else if ($1.type == CHAR && $3.type == CHAR) {
+            bool result = val1[0] == val2[0];
+            sprintf($$.valeur, "%s", result ? "true" : "false");
+            $$.type = BOOLEAN;
+        } else if ($1.type == STRING && $3.type == STRING) {
+            bool result = strcmp(val1, val2) == 0;
+            sprintf($$.valeur, "%s", result ? "true" : "false");
+            $$.type = BOOLEAN;
+        } else {
+            semanticError("Invalid types for equality check", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R", qC);
+        $$.nom = resultVarName;
+        quad = creer_Q("==", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      $3.nom ? $3.nom : $3.valeur,
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     | expression NOT_EQUAL expression
     | expression ET expression
     | expression OU expression
     ; 
 
 incrementation:
-    variable INCREM 
+    variable INCREM {
+
+        char bff[255]; 
+        Symbole* found1;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get value for operand
+        char *val1;
+        val1 = $1.valeur;        
+        // Perform addition based on types
+        if ($1.type == ENTIER ) {
+            int result = atoi(val1) + 1;
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT ) {
+            float result = atof(val1) + 1;
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for addition", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("++", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      "",
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     | variable DECREM
+    {
+        char bff[255]; 
+        Symbole* found1;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get value for operand
+        char *val1;
+        val1 = $1.valeur;        
+        // Perform subtraction based on types
+        if ($1.type == ENTIER ) {
+            int result = atoi(val1) - 1;
+            sprintf($$.valeur, "%d", result);
+            $$.type = ENTIER;
+        } else if ($1.type == FLOTTANT ) {
+            float result = atof(val1) - 1;
+            sprintf($$.valeur, "%f", result);
+            $$.type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for subtraction", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        $$.nom=resultVarName;
+        quad = creer_Q("--", 
+                      $1.nom ? $1.nom : $1.valeur,
+                      "",
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     ;
 
 declarations:
@@ -650,6 +790,41 @@ declaration:
     } SEMICOLON
     | tableau SEMICOLON {printf("declaration correcte syntaxiquement\n");}
     | type_Struct SEMICOLON {printf("declaration correcte syntaxiquement\n");}
+    | type ID ASSIGN expression SEMICOLON {
+        Symbole* found;
+        if (rechercherSymbole(TS, $2, &found)) {
+            semanticError("Variable already declared", line);
+        }
+        
+        // Convert the type token to string
+        char* typeStr;
+        switch($1) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        
+        // Check if the expression is valid for the type
+        if (!isValidLiteralForType($4.valeur, typeStr)) {
+            semanticError("Invalid literal for type", line);
+        }
+        
+        Symbole* sym = creerSymbole(
+            VARIABLE,    // category
+            $2,         // name
+            typeStr,    // type
+            $4.valeur,  // initial value
+            line,       // line number
+            0          // memory address
+        );
+        insererSymbole(TS, sym);
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+    }
+    
     ;
 functions:
     /* empty */
@@ -748,8 +923,33 @@ assignment:
     ;
 
 condition:
-    IF PAR_OUV expression PAR_FERM corps elsebloc  {printf("condition correcte syntaxiquement\n");}
+    ifstatement corps elsebloc  
+        {
+        while (!Pempty(P)) {
+            quad = pop(P);
+            updateLabel(quad, qC);
+        }
+        
+        quad = creer_Q("finIf","", " ", "", qC);
+        inserer_TQ(TQ, quad);
+        qC++;
+    }
     ;
+ifstatement:
+    IF PAR_OUV expression PAR_FERM{
+        //vérifier si le resultat de l'expression est un boolean
+        if($3.type != BOOLEAN){
+            semanticError("L'expression doit être un boolean", line);
+        }else{
+            qC++;
+            //branchement en cas de faux
+            quad = creer_Q("BZ","temp", " ", $3.valeur, qC);
+            inserer_TQ(TQ, quad);
+            //sauvegarder qC pour la mise a jour de l'adresse de branchement dans la pile des adresses
+            push(P, quad);
+            
+        }
+    }
 
 loop:
     WHILE PAR_OUV expression PAR_FERM corps   {printf("condition correcte syntaxiquement\n");}
@@ -763,9 +963,63 @@ corps :
     | instruction
     ;
 elsebloc:
-    /* empty */
-    | ELSE corps
-    | ELIF PAR_OUV expression PAR_FERM corps elsebloc
+    /* empty */ {
+        //maj de l'adresse de branchement dans la pile des adresses
+        qC++;
+        quad = pop(P);
+        updateLabel(quad, qC);
+        printf("\nelsebloc correcte syntaxiquement qc = %d\n", qC);
+    }
+    | elsestatement corps {
+        qC++;
+        //maj de l'adresse de branchement dans la pile des adresses
+        quad = pop(P);
+        updateLabel(quad, qC);
+        //maj de l'adresse de branchement dans la pile des adresses
+       
+    }
+    | elifstatement corps elsebloc
+    
+    ;
+elsestatement :
+    ELSE {
+        //maj de l'adresse de branchement dans la pile des adresses
+        qC++;
+        quad = pop(P);
+        updateLabel(quad, qC+1);
+        //branchement vers la fin
+        
+        quad = creer_Q("BR","temp", " ", "", qC);
+        inserer_TQ(TQ, quad);
+        push(P, quad);
+        
+    }
+elifstatement:
+    elifkey PAR_OUV expression PAR_FERM {
+        if($3.type != BOOLEAN){
+            semanticError("L'expression doit être un boolean", line);
+        }else{
+            qC++;
+            //branchement en cas de faux
+            quad = creer_Q("BZ","temp", " ", $3.valeur, qC);
+            inserer_TQ(TQ, quad);
+            //sauvegarder qC pour la mise a jour de l'adresse de branchement dans la pile des adresses
+            push(P, quad);
+            
+        }
+    }
+elifkey:
+    ELIF{
+        //maj de l'adresse de branchement dans la pile des adresses
+        qC++;
+        quad = pop(P);
+        updateLabel(quad, qC+1);
+        //branchement vers la fin
+        
+        quad = creer_Q("BR","temp", " ", "", qC);
+        inserer_TQ(TQ, quad);
+        push(P, quad);
+    }
     ;
 
 
