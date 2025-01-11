@@ -27,6 +27,8 @@
     Symbole* node;
 
     int sauvLabel;
+    int sauvDebut;
+    int sauvFin;
 
     int qC = 0;
 
@@ -983,12 +985,98 @@ condition:
     ;
 
 loop:
-    WHILE PAR_OUV expression PAR_FERM corps   {printf("condition correcte syntaxiquement\n");}
-    | FOR PAR_OUV ID FROM INT TO INT PAR_FERM corps
-    {
-        printf("For loop recognized\n");
-    }
+    while_partie_une while_partie_deux while_partie_trois
+    | for_partie_une for_partie_deux for_partie_trois
     ;
+
+while_partie_une:
+    WHILE PAR_OUV {
+
+        sauvDebut = qC;
+        qC++;
+    };
+
+while_partie_deux:
+    expression PAR_FERM {
+
+        if($1.type != BOOLEAN) {
+            semanticError("Condition de boucle invalide", line);
+        }
+        // Branchement vers fin si condition n'est pas vrai
+        qC++;
+        quad = creer_Q("BZ", "fin", " ", $1.valeur, qC);
+        inserer_TQ(TQ, quad);
+        pushP(P, qC);
+        afficherTQ(TQ);
+    };
+
+while_partie_trois:
+    corps {
+
+        qC++;
+        quad = popP(P); 
+        updateLabel(quad, qC+1);
+        // Branchement inconditionnel vers Debut
+        quad = creer_Q("BR", sauvDebut, "", "", qC);
+        inserer_TQ(TQ, quad);
+        afficherTQ(TQ);
+
+    };
+
+for_partie_une:
+    FOR PAR_OUV {
+
+        sauvDebut = qC;
+        qC++;
+    };
+
+for_partie_deux:
+    ID FROM INT TO INT PAR_FERM {
+
+        Symbole* found;
+        if (rechercherSymbole(TS, $1, &found)) {
+            if (found->categorie == VARIABLE) {
+                qC++;
+                quad = creer_Q(":=", $1, " ", $3.valeur, qC);
+                inserer_TQ(TQ, quad);
+                afficherTQ(TQ);
+            } else {
+                semanticError("Identifier is not a variable", line);
+            }
+        } else {
+            semanticError("Variable non declaree", line);
+        }
+
+        qC++;
+        quad = creer_Q(">", $1, $5.valeur, "", qC);
+        inserer_TQ(TQ, quad);
+
+        if($1.type != ENTIER || $5.type != ENTIER) {
+            semanticError("Type incompatible dans la boucle for", line);
+        }
+
+        // Branchement vers fin si condition n'est pas vrai
+        qC++;
+        quad = creer_Q("BZ", "fin", " ", "", qC);
+        inserer_TQ(TQ, quad);
+        pushP(P, qC);
+
+    };
+
+for_partie_trois:
+    corps {
+
+        qC++;
+        quad = popP(P); 
+        updateLabel(quad, qC+1);
+
+        // Branchement inconditionnel vers Debut
+        quad = creer_Q("BR", sauvDebut, "", "", qC);
+        inserer_TQ(TQ, quad);
+        afficherTQ(TQ);
+
+    };
+
 corps :
     DEB_CORPS declarations instructions FIN_CORPS
     | instruction

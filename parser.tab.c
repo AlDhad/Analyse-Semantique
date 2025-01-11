@@ -695,13 +695,13 @@ static const yytype_int16 yyrline[] =
        0,   175,   175,   175,   192,   198,   204,   210,   216,   222,
      230,   234,   237,   243,   249,   255,   259,   263,   269,   273,
      277,   293,   294,   295,   348,   349,   350,   351,   352,   353,
-     354,   355,   356,   357,   358,   359,   360,   361,   362,   366,
-     367,   370,   372,   376,   376,   405,   406,   408,   410,   413,
-     414,   417,   419,   420,   424,   425,   426,   428,   430,   433,
-     434,   435,   436,   437,   438,   439,   440,   441,   442,   443,
-     446,   450,   451,   452,   456,   460,   461,   461,   500,   501,
-     505,   509,   510,   516,   517,   519,   521,   522,   527,   532,
-     534,   535,   540,   541
+     354,   356,   419,   482,   545,   608,   671,   734,   787,   843,
+     844,   847,   849,   853,   853,   882,   883,   885,   887,   890,
+     891,   894,   896,   897,   901,   902,   903,   905,   907,   910,
+     911,   912,   913,   914,   915,   916,   917,   918,   919,   920,
+     923,   927,   928,   929,   933,   937,   938,   938,   977,   978,
+     982,   986,   987,   993,   994,   996,   998,   999,  1004,  1009,
+    1011,  1012,  1017,  1018
 };
 #endif
 
@@ -1686,8 +1686,531 @@ yyreduce:
 #line 1687 "parser.tab.c"
     break;
 
+  case 31: /* expression: expression INF expression  */
+#line 356 "parser.y"
+                                {
+        printf("I am inside comparison (less than)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            comparison_result = atoi(val1) < atoi(val2);
+        } else if (((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == FLOTTANT)) {
+            comparison_result = atof(val1) < atof(val2);
+        } else if ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == CHAR) {
+            comparison_result = val1[0] < val2[0];
+        } else if ((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == STRING) {
+            comparison_result = strcmp(val1, val2) < 0;
+        } else if (((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == CHAR) || ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf((yyval.structure).valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("<", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 1754 "parser.tab.c"
+    break;
+
+  case 32: /* expression: expression INF_EGAL expression  */
+#line 419 "parser.y"
+                                     {
+
+        printf("I am inside comparison (less than or equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            comparison_result = atoi(val1) <= atoi(val2);
+        } else if (((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == FLOTTANT)) {
+            comparison_result = atof(val1) <= atof(val2);
+        } else if ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == CHAR) {
+            comparison_result = val1[0] <= val2[0];
+        } else if ((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == STRING) {
+            comparison_result = strcmp(val1, val2) <= 0;
+        } else if (((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == CHAR) || ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf((yyval.structure).valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("<=", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 1822 "parser.tab.c"
+    break;
+
+  case 33: /* expression: expression SUPP expression  */
+#line 482 "parser.y"
+                                 {
+
+        printf("I am inside comparison (greater than)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+           // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            comparison_result = atoi(val1) > atoi(val2);
+        } else if (((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == FLOTTANT)) {
+            comparison_result = atof(val1) > atof(val2);
+        } else if ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == CHAR) {
+            comparison_result = val1[0] < val2[0];
+        } else if ((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == STRING) {
+            comparison_result = strcmp(val1, val2) > 0;
+        } else if (((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == CHAR) || ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf((yyval.structure).valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q(">", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 1890 "parser.tab.c"
+    break;
+
+  case 34: /* expression: expression SUPP_EGAL expression  */
+#line 545 "parser.y"
+                                      {
+
+        printf("I am inside comparison (greater than or equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            comparison_result = atoi(val1) >= atoi(val2);
+        } else if (((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == FLOTTANT)) {
+            comparison_result = atof(val1) >= atof(val2);
+        } else if ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == CHAR) {
+            comparison_result = val1[0] < val2[0];
+        } else if ((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == STRING) {
+            comparison_result = strcmp(val1, val2) >= 0;
+        } else if (((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == CHAR) || ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf((yyval.structure).valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q(">=", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 1958 "parser.tab.c"
+    break;
+
+  case 35: /* expression: expression EQUAL expression  */
+#line 608 "parser.y"
+                                  {
+
+        printf("I am inside comparison (equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            comparison_result = atoi(val1) == atoi(val2);
+        } else if (((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == FLOTTANT)) {
+            comparison_result = atof(val1) == atof(val2);
+        } else if ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == CHAR) {
+            comparison_result = val1[0] == val2[0];
+        } else if ((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == STRING) {
+            comparison_result = strcmp(val1, val2) == 0;
+        } else if (((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == CHAR) || ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf((yyval.structure).valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("==", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 2026 "parser.tab.c"
+    break;
+
+  case 36: /* expression: expression NOT_EQUAL expression  */
+#line 671 "parser.y"
+                                      {
+
+        printf("I am inside comparison (not equal)\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform comparison based on types
+        int comparison_result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            comparison_result = atoi(val1) != atoi(val2);
+        } else if (((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || 
+                ((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == FLOTTANT)) {
+            comparison_result = atof(val1) != atof(val2);
+        } else if ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == CHAR) {
+            comparison_result = val1[0] != val2[0];
+        } else if ((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == STRING) {
+            comparison_result = strcmp(val1, val2) != 0;
+        } else if (((yyvsp[-2].structure).type == STRING && (yyvsp[0].structure).type == CHAR) || ((yyvsp[-2].structure).type == CHAR && (yyvsp[0].structure).type == STRING)) {
+            semanticError("Invalid comparison between STRING and CHAR", line);
+        } else {
+            semanticError("Invalid types for comparison", line);
+        }
+
+        // Store the result of the comparison
+        sprintf((yyval.structure).valeur, "%d", comparison_result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of comparison is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("!=", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 2094 "parser.tab.c"
+    break;
+
+  case 37: /* expression: expression ET expression  */
+#line 734 "parser.y"
+                               {
+
+        printf("I am inside logical AND\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform logical AND based on types
+        int result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == BOOLEAN && (yyvsp[0].structure).type == BOOLEAN) {
+            result = (strcmp(val1, "true") == 0) && (strcmp(val2, "true") == 0);
+        } else {
+            semanticError("Invalid types for logical AND", line);
+        }
+
+        // Store the result of the logical AND
+        sprintf((yyval.structure).valeur, "%d", result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of logical AND is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("AND", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 2152 "parser.tab.c"
+    break;
+
+  case 38: /* expression: expression OU expression  */
+#line 787 "parser.y"
+                               {
+
+        printf("I am inside logical OR\n");
+        Symbole* found1;
+        Symbole* found2;
+
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
+            val1 = found1->valeur;
+        } else {
+            val1 = (yyvsp[-2].structure).valeur;
+        }
+
+        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
+            val2 = found2->valeur;
+        } else {
+            val2 = (yyvsp[0].structure).valeur;
+        }
+
+        // Perform logical OR based on types
+        int result = 0; // 1 if true, 0 otherwise
+        if ((yyvsp[-2].structure).type == BOOLEAN && (yyvsp[0].structure).type == BOOLEAN) {
+            result = (strcmp(val1, "true") == 0) || (strcmp(val2, "true") == 0);
+        } else {
+            semanticError("Invalid types for logical OR", line);
+        }
+
+        // Store the result of the logical OR
+        sprintf((yyval.structure).valeur, "%d", result); // Store as "1" (true) or "0" (false)
+        (yyval.structure).type = BOOLEAN; // Result of logical OR is a boolean
+
+        // Generate quadruplet
+        qC++;
+        quad = creer_Q("OR", 
+                    (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur, 
+                    (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur, 
+                    (yyval.structure).valeur, 
+                    qC);
+        inserer_TQ(TQ, quad);
+
+        // Debug and output
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 2210 "parser.tab.c"
+    break;
+
   case 43: /* $@2: %empty  */
-#line 376 "parser.y"
+#line 853 "parser.y"
              {
         Symbole* found;
         if (rechercherSymbole(TS, (yyvsp[0].str), &found)) {
@@ -1717,65 +2240,65 @@ yyreduce:
         afficherTableSymbole(TS); // afficher TS pour confirmer
         afficherTQ(TQ);
     }
-#line 1721 "parser.tab.c"
+#line 2244 "parser.tab.c"
     break;
 
   case 45: /* declaration: tableau SEMICOLON  */
-#line 405 "parser.y"
+#line 882 "parser.y"
                         {printf("declaration correcte syntaxiquement\n");}
-#line 1727 "parser.tab.c"
+#line 2250 "parser.tab.c"
     break;
 
   case 46: /* declaration: type_Struct SEMICOLON  */
-#line 406 "parser.y"
+#line 883 "parser.y"
                             {printf("declaration correcte syntaxiquement\n");}
-#line 1733 "parser.tab.c"
+#line 2256 "parser.tab.c"
     break;
 
   case 49: /* fonction: type FONCTION ID PAR_OUV parametres PAR_FERM corps  */
-#line 413 "parser.y"
+#line 890 "parser.y"
                                                        {printf("fonction correcte syntaxiquement\n");}
-#line 1739 "parser.tab.c"
+#line 2262 "parser.tab.c"
     break;
 
   case 50: /* fonction: FONCTION ID PAR_OUV parametres PAR_FERM corps  */
-#line 414 "parser.y"
+#line 891 "parser.y"
                                                     {printf("fonction correcte syntaxiquement\n");}
-#line 1745 "parser.tab.c"
+#line 2268 "parser.tab.c"
     break;
 
   case 52: /* parametres: parametre VIRGULE parametres  */
-#line 419 "parser.y"
+#line 896 "parser.y"
                                    {printf("parametres correcte syntaxiquement\n");}
-#line 1751 "parser.tab.c"
+#line 2274 "parser.tab.c"
     break;
 
   case 56: /* parametre: ENREGISTREMENT ID  */
-#line 426 "parser.y"
+#line 903 "parser.y"
                         {printf("parametre correcte syntaxiquement\n");}
-#line 1757 "parser.tab.c"
+#line 2280 "parser.tab.c"
     break;
 
   case 70: /* read: INPUT PAR_OUV ID PAR_FERM SEMICOLON  */
-#line 446 "parser.y"
+#line 923 "parser.y"
                                         {printf("read correcte syntaxiquement\n");}
-#line 1763 "parser.tab.c"
+#line 2286 "parser.tab.c"
     break;
 
   case 73: /* write: PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON  */
-#line 452 "parser.y"
+#line 929 "parser.y"
                                             {printf("write correcte syntaxiquement\n");}
-#line 1769 "parser.tab.c"
+#line 2292 "parser.tab.c"
     break;
 
   case 74: /* retourner: RETURN expression  */
-#line 456 "parser.y"
+#line 933 "parser.y"
                       {printf("retourner correcte syntaxiquement\n");}
-#line 1775 "parser.tab.c"
+#line 2298 "parser.tab.c"
     break;
 
   case 76: /* $@3: %empty  */
-#line 461 "parser.y"
+#line 938 "parser.y"
                            {
         Symbole* found;
         if (rechercherSymbole(TS, (yyvsp[-2].str), &found)) { // is declared
@@ -1815,43 +2338,43 @@ yyreduce:
             semanticError("Variable non declaree", line);
         }
     }
-#line 1819 "parser.tab.c"
+#line 2342 "parser.tab.c"
     break;
 
   case 80: /* condition: IF PAR_OUV expression PAR_FERM corps elsebloc  */
-#line 505 "parser.y"
+#line 982 "parser.y"
                                                    {printf("condition correcte syntaxiquement\n");}
-#line 1825 "parser.tab.c"
+#line 2348 "parser.tab.c"
     break;
 
   case 81: /* loop: WHILE PAR_OUV expression PAR_FERM corps  */
-#line 509 "parser.y"
+#line 986 "parser.y"
                                               {printf("condition correcte syntaxiquement\n");}
-#line 1831 "parser.tab.c"
+#line 2354 "parser.tab.c"
     break;
 
   case 82: /* loop: FOR PAR_OUV ID FROM INT TO INT PAR_FERM corps  */
-#line 511 "parser.y"
+#line 988 "parser.y"
     {
         printf("For loop recognized\n");
     }
-#line 1839 "parser.tab.c"
+#line 2362 "parser.tab.c"
     break;
 
   case 91: /* parametresCall: parametreCall  */
-#line 536 "parser.y"
+#line 1013 "parser.y"
     {printf("parametres de l'appel du fonction correcte syntaxiquement\n");}
-#line 1845 "parser.tab.c"
+#line 2368 "parser.tab.c"
     break;
 
   case 93: /* parametreCall: variable  */
-#line 541 "parser.y"
+#line 1018 "parser.y"
                {printf("parametre correcte syntaxiquement\n");}
-#line 1851 "parser.tab.c"
+#line 2374 "parser.tab.c"
     break;
 
 
-#line 1855 "parser.tab.c"
+#line 2378 "parser.tab.c"
 
       default: break;
     }
@@ -2044,7 +2567,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 544 "parser.y"
+#line 1021 "parser.y"
 
 
 void yyerror(const char *s) {
