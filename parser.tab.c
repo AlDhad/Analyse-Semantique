@@ -113,10 +113,10 @@
     int sauvline = 1;
 
     #define TYPE_ENTIER "ENTIER"
-#define TYPE_FLOTTANT "FLOTTANT"
-#define TYPE_CHAR "CHAR"
-#define TYPE_STRING "STRING"
-#define TYPE_BOOLEAN "BOOLEAN"
+    #define TYPE_FLOTTANT "FLOTTANT"
+    #define TYPE_CHAR "CHAR"
+    #define TYPE_STRING "STRING"
+    #define TYPE_BOOLEAN "BOOLEAN"
 
 // Modified type checking function to work with your symbol table
 bool areTypesCompatible(const char* type1, const char* type2) {
@@ -695,13 +695,13 @@ static const yytype_int16 yyrline[] =
        0,   175,   175,   175,   192,   198,   204,   210,   216,   222,
      230,   234,   237,   243,   249,   255,   259,   263,   269,   273,
      277,   293,   294,   295,   348,   349,   350,   351,   352,   353,
-     354,   356,   419,   482,   545,   608,   671,   734,   787,   843,
-     844,   847,   849,   853,   853,   882,   883,   885,   887,   890,
-     891,   894,   896,   897,   901,   902,   903,   905,   907,   910,
-     911,   912,   913,   914,   915,   916,   917,   918,   919,   920,
-     923,   927,   928,   929,   933,   937,   938,   938,   977,   978,
-     982,   986,   987,   993,   994,   996,   998,   999,  1004,  1009,
-    1011,  1012,  1017,  1018
+     354,   355,   356,   357,   358,   359,   360,   361,   362,   366,
+     367,   370,   372,   376,   376,   405,   406,   408,   410,   413,
+     414,   417,   419,   420,   424,   425,   426,   428,   430,   433,
+     434,   435,   436,   437,   438,   439,   440,   441,   442,   443,
+     446,   450,   451,   452,   456,   460,   461,   461,   500,   501,
+     505,   509,   510,   516,   517,   519,   521,   522,   527,   532,
+     534,   535,   540,   541
 };
 #endif
 
@@ -1612,7 +1612,7 @@ yyreduce:
   case 20: /* variable: ID  */
 #line 277 "parser.y"
          {
-        (yyval.structure).nom = (yyvsp[0].str);
+        (yyval.structure).nom = strdup((yyvsp[0].str));
         Symbole* found;
         if (rechercherSymbole(TS, (yyvsp[0].str), &found)) {
             switch(found->type[0]) {
@@ -1623,13 +1623,17 @@ yyreduce:
                 case 'B': (yyval.structure).type = BOOLEAN; break;
                 default: (yyval.structure).type = ENTIER;
             }
+            (yyval.structure).valeur = strdup(found->valeur);
+            }
+            else{
+                semanticError("Variable non declaree", line);
+            }
         }
-    }
-#line 1629 "parser.tab.c"
+#line 1633 "parser.tab.c"
     break;
 
   case 23: /* expression: expression PLUS expression  */
-#line 295 "parser.y"
+#line 299 "parser.y"
                                  {
         printf("i am inside addition\n");
         char bff[255]; 
@@ -1645,24 +1649,19 @@ yyreduce:
 
         // Get values for operands
         char *val1, *val2;
-        if ((yyvsp[-2].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[-2].structure).nom, &found1)) {
-            val1 = found1->valeur;
-        } else {
-            val1 = (yyvsp[-2].structure).valeur;
-        }
-
-        if ((yyvsp[0].structure).nom != NULL && rechercherSymbole(TS, (yyvsp[0].structure).nom, &found2)) {
-            val2 = found2->valeur;
-        } else {
-            val2 = (yyvsp[0].structure).valeur;
-        }
-
+        val1 = (yyvsp[-2].structure).valeur;
+        val2 = (yyvsp[0].structure).valeur;            
         // Perform addition based on types
         if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            printf("i am inside addition\n");
             int result = atoi(val1) + atoi(val2);
             sprintf((yyval.structure).valeur, "%d", result);
             (yyval.structure).type = ENTIER;
         } else if ((yyvsp[-2].structure).type == FLOTTANT || (yyvsp[0].structure).type == FLOTTANT) {
+            float result = atof(val1) + atof(val2);
+            sprintf((yyval.structure).valeur, "%f", result);
+            (yyval.structure).type = FLOTTANT;
+        } else if (((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT)) {
             float result = atof(val1) + atof(val2);
             sprintf((yyval.structure).valeur, "%f", result);
             (yyval.structure).type = FLOTTANT;
@@ -1672,18 +1671,79 @@ yyreduce:
 
         // Generate quadruplet
         qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        (yyval.structure).nom=resultVarName;
         quad = creer_Q("+", 
                       (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur,
                       (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur,
-                      (yyval.structure).valeur,
-                      qC);
+                      (yyval.structure).nom,
+                      qC);        
+        afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
         afficherTableSymbole(TS);
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
-#line 1687 "parser.tab.c"
+#line 1690 "parser.tab.c"
+    break;
+
+  case 24: /* expression: expression MOINS expression  */
+#line 351 "parser.y"
+                                  {
+        printf("i am inside subtraction\n");
+        char bff[255]; 
+        Symbole* found1;
+        Symbole* found2;
+        
+        // Initialize result structure
+        (yyval.structure).nom = NULL;
+        (yyval.structure).valeur = malloc(255);
+        if ((yyval.structure).valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get values for operands
+        char *val1, *val2;
+        val1 = (yyvsp[-2].structure).valeur;
+        val2 = (yyvsp[0].structure).valeur;            
+        // Perform subtraction based on types
+        if ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == ENTIER) {
+            printf("i am inside subtraction\n");
+            int result = atoi(val1) - atoi(val2);
+            sprintf((yyval.structure).valeur, "%d", result);
+            (yyval.structure).type = ENTIER;
+        } else if ((yyvsp[-2].structure).type == FLOTTANT || (yyvsp[0].structure).type == FLOTTANT) {
+            float result = atof(val1) - atof(val2);
+            sprintf((yyval.structure).valeur, "%f", result);
+            (yyval.structure).type = FLOTTANT;
+        } else if (((yyvsp[-2].structure).type == FLOTTANT && (yyvsp[0].structure).type == ENTIER) || ((yyvsp[-2].structure).type == ENTIER && (yyvsp[0].structure).type == FLOTTANT)) {
+            float result = atof(val1) - atof(val2);
+            sprintf((yyval.structure).valeur, "%f", result);
+            (yyval.structure).type = FLOTTANT;
+        } else {
+            semanticError("Invalid types for subtraction", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R",qC);
+        (yyval.structure).nom=resultVarName;
+        quad = creer_Q("-", 
+                      (yyvsp[-2].structure).nom ? (yyvsp[-2].structure).nom : (yyvsp[-2].structure).valeur,
+                      (yyvsp[0].structure).nom ? (yyvsp[0].structure).nom : (yyvsp[0].structure).valeur,
+                      (yyval.structure).nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
+#line 1747 "parser.tab.c"
     break;
 
   case 31: /* expression: expression INF expression  */
@@ -2210,7 +2270,7 @@ yyreduce:
     break;
 
   case 43: /* $@2: %empty  */
-#line 853 "parser.y"
+#line 376 "parser.y"
              {
         Symbole* found;
         if (rechercherSymbole(TS, (yyvsp[0].str), &found)) {
@@ -2240,65 +2300,65 @@ yyreduce:
         afficherTableSymbole(TS); // afficher TS pour confirmer
         afficherTQ(TQ);
     }
-#line 2244 "parser.tab.c"
+#line 1721 "parser.tab.c"
     break;
 
   case 45: /* declaration: tableau SEMICOLON  */
-#line 882 "parser.y"
+#line 405 "parser.y"
                         {printf("declaration correcte syntaxiquement\n");}
-#line 2250 "parser.tab.c"
+#line 1727 "parser.tab.c"
     break;
 
   case 46: /* declaration: type_Struct SEMICOLON  */
-#line 883 "parser.y"
+#line 406 "parser.y"
                             {printf("declaration correcte syntaxiquement\n");}
-#line 2256 "parser.tab.c"
+#line 1733 "parser.tab.c"
     break;
 
   case 49: /* fonction: type FONCTION ID PAR_OUV parametres PAR_FERM corps  */
-#line 890 "parser.y"
+#line 413 "parser.y"
                                                        {printf("fonction correcte syntaxiquement\n");}
-#line 2262 "parser.tab.c"
+#line 1739 "parser.tab.c"
     break;
 
   case 50: /* fonction: FONCTION ID PAR_OUV parametres PAR_FERM corps  */
-#line 891 "parser.y"
+#line 414 "parser.y"
                                                     {printf("fonction correcte syntaxiquement\n");}
-#line 2268 "parser.tab.c"
+#line 1745 "parser.tab.c"
     break;
 
   case 52: /* parametres: parametre VIRGULE parametres  */
-#line 896 "parser.y"
+#line 419 "parser.y"
                                    {printf("parametres correcte syntaxiquement\n");}
-#line 2274 "parser.tab.c"
+#line 1751 "parser.tab.c"
     break;
 
   case 56: /* parametre: ENREGISTREMENT ID  */
-#line 903 "parser.y"
+#line 426 "parser.y"
                         {printf("parametre correcte syntaxiquement\n");}
-#line 2280 "parser.tab.c"
+#line 1757 "parser.tab.c"
     break;
 
   case 70: /* read: INPUT PAR_OUV ID PAR_FERM SEMICOLON  */
-#line 923 "parser.y"
+#line 446 "parser.y"
                                         {printf("read correcte syntaxiquement\n");}
-#line 2286 "parser.tab.c"
+#line 1763 "parser.tab.c"
     break;
 
   case 73: /* write: PRINT PAR_OUV CHAINE PAR_FERM SEMICOLON  */
-#line 929 "parser.y"
+#line 452 "parser.y"
                                             {printf("write correcte syntaxiquement\n");}
-#line 2292 "parser.tab.c"
+#line 1769 "parser.tab.c"
     break;
 
   case 74: /* retourner: RETURN expression  */
-#line 933 "parser.y"
+#line 456 "parser.y"
                       {printf("retourner correcte syntaxiquement\n");}
-#line 2298 "parser.tab.c"
+#line 1775 "parser.tab.c"
     break;
 
   case 76: /* $@3: %empty  */
-#line 938 "parser.y"
+#line 461 "parser.y"
                            {
         Symbole* found;
         if (rechercherSymbole(TS, (yyvsp[-2].str), &found)) { // is declared
@@ -2338,43 +2398,43 @@ yyreduce:
             semanticError("Variable non declaree", line);
         }
     }
-#line 2342 "parser.tab.c"
+#line 1819 "parser.tab.c"
     break;
 
   case 80: /* condition: IF PAR_OUV expression PAR_FERM corps elsebloc  */
-#line 982 "parser.y"
+#line 505 "parser.y"
                                                    {printf("condition correcte syntaxiquement\n");}
-#line 2348 "parser.tab.c"
+#line 1825 "parser.tab.c"
     break;
 
   case 81: /* loop: WHILE PAR_OUV expression PAR_FERM corps  */
-#line 986 "parser.y"
+#line 509 "parser.y"
                                               {printf("condition correcte syntaxiquement\n");}
-#line 2354 "parser.tab.c"
+#line 1831 "parser.tab.c"
     break;
 
   case 82: /* loop: FOR PAR_OUV ID FROM INT TO INT PAR_FERM corps  */
-#line 988 "parser.y"
+#line 511 "parser.y"
     {
         printf("For loop recognized\n");
     }
-#line 2362 "parser.tab.c"
+#line 1839 "parser.tab.c"
     break;
 
   case 91: /* parametresCall: parametreCall  */
-#line 1013 "parser.y"
+#line 536 "parser.y"
     {printf("parametres de l'appel du fonction correcte syntaxiquement\n");}
-#line 2368 "parser.tab.c"
+#line 1845 "parser.tab.c"
     break;
 
   case 93: /* parametreCall: variable  */
-#line 1018 "parser.y"
+#line 541 "parser.y"
                {printf("parametre correcte syntaxiquement\n");}
-#line 2374 "parser.tab.c"
+#line 1851 "parser.tab.c"
     break;
 
 
-#line 2378 "parser.tab.c"
+#line 1855 "parser.tab.c"
 
       default: break;
     }
@@ -2567,7 +2627,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 1021 "parser.y"
+#line 544 "parser.y"
 
 
 void yyerror(const char *s) {
