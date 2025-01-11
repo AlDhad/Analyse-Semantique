@@ -226,11 +226,56 @@ type:
 
 
 tableau :
-    TABLE ID DEB_TABLEAU INT FIN_TABLEAU
+    TABLE type ID DEB_TABLEAU INT FIN_TABLEAU {
+        Symbole* found;
+        if (rechercherSymbole(TS, $3, &found)) {
+            semanticError("Tableau Deja Déclaré", line);
+        }
+        
+        // Convert the type token to string
+        char* typeStr;
+        switch($2) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        
+        Symbole* sym = creerSymbole(
+            VARIABLE,    // category
+            $3,         // name
+            typeStr,    // type
+            "",         // initial value
+            line,       // line number
+            0          // memory address
+        );
+        insererSymbole(TS, sym);
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+    }
     ;
 
 type_Struct : 
-    ENREGISTREMENT ID DEB_CORPS declarations FIN_CORPS
+    ENREGISTREMENT ID DEB_CORPS declarations FIN_CORPS{
+        Symbole* found;
+        if (rechercherSymbole(TS, $2, &found)) {
+            semanticError("Structure Deja Déclaré", line);
+        }
+        
+        Symbole* sym = creerSymbole(
+            VARIABLE,    // category
+            $3,         // name
+            '',    // type
+            "",         // initial value
+            line,       // line number
+            0          // memory address
+        );
+        insererSymbole(TS, sym);
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+    }
     ;
 valeur:
     INT { 
@@ -266,12 +311,32 @@ valeur:
     ;
 variable:
     ID DEB_TABLEAU INT FIN_TABLEAU {
+        Symbole* found;
+        rechercherSymbole(TS, $1, &found);
+        if (found == NULL) {
+            semanticError("Tableau non declaree", line);
+        }
+        else{
         $$.nom = $1;
-        $$.type = ENTIER;  // assuming array of integers
+        $$.type = found.type; }
     }
     | ID POINTEUR ID {
-        $$.nom = $1;
-        $$.type = ENTIER;  // modify based on your needs
+        Symbole* found;
+        rechercherSymbole(TS, $1, &found);
+        if (found == NULL) {
+            semanticError("Structure non declaree", line);
+        }
+        else{
+            rechercherSymbole(TS, $3, &found);
+            if (found == NULL) {
+                semanticError("Variable non declaree", line);
+            }
+            else{
+                $$.nom = $3;
+                $$.type = found.type;
+            }
+        }
+
     }
     | ID {
         $$.nom = strdup($1);
@@ -788,8 +853,8 @@ declaration:
         afficherTableSymbole(TS); // afficher TS pour confirmer
         afficherTQ(TQ);
     } SEMICOLON
-    | tableau SEMICOLON {printf("declaration correcte syntaxiquement\n");}
-    | type_Struct SEMICOLON {printf("declaration correcte syntaxiquement\n");}
+    | tableau SEMICOLON 
+    | type_Struct SEMICOLON 
     | type ID ASSIGN expression SEMICOLON {
         Symbole* found;
         if (rechercherSymbole(TS, $2, &found)) {
