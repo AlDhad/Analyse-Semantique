@@ -249,7 +249,7 @@ tableau :
             typeStr,    // type
             "",         // initial value
             line,       // line number
-            0          // memory address
+            $5         // memory address
         );
         insererSymbole(TS, sym);
         afficherTableSymbole(TS); // afficher TS pour confirmer
@@ -317,8 +317,15 @@ variable:
             semanticError("Tableau non declaree", line);
         }
         else{
-        $$.nom = $1;
-        $$.type = found.type; }
+            if{
+                $3> found->adresseMem
+                semanticError("Index hors limites", line);
+            }
+            else{
+                $$.nom = $1;
+                $$.type = found.type;
+            }
+       }
     }
     | ID POINTEUR ID {
         Symbole* found;
