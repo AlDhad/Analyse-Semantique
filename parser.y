@@ -158,8 +158,8 @@ struct {
 %type<structure> fonction
 %type<structure> parametre
 
-%right OU
-%right ET
+%right OR
+%right AND
 %right NOT INCREM DECREM
 %right INF INF_EGAL SUPP SUPP_EGAL EGALE PASEGALE
 %right PLUS MOINS
@@ -466,7 +466,6 @@ expression:
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
-
     | expression INF_EGAL expression {
 
         printf("i am inside comparaison\n");
@@ -639,6 +638,7 @@ expression:
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
+    
     | expression EQUAL expression {
 
         printf("i am inside comparaison\n");
@@ -675,6 +675,11 @@ expression:
             int result = strcmp(val1, val2) == 0;
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
+        }
+        else if($1.type == BOOLEAN && $3.type == BOOLEAN){
+            int result = atoi(val1) == atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = BOOLEAN;
         } else {
             semanticError("Invalid types for comparaison", line);
         } 
@@ -696,6 +701,7 @@ expression:
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
+    
     | expression NOT_EQUAL expression {
 
         printf("i am inside comparaison\n");
@@ -732,6 +738,10 @@ expression:
             int result = strcmp(val1, val2) != 0;
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
+        } else if($1.type == BOOLEAN && $3.type == BOOLEAN){
+            int result = atoi(val1) != atoi(val2);
+            sprintf($$.valeur, "%d", result);
+            $$.type = BOOLEAN;
         } else {
             semanticError("Invalid types for comparaison", line);
         } 
@@ -753,7 +763,7 @@ expression:
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
-    | expression ET expression {
+    | expression AND expression {
 
         printf("i am inside comparaison\n");
         char bff[255]; 
@@ -799,7 +809,7 @@ expression:
         afficherTQDansFichier(TQ, "output.txt");
 
     }
-    | expression OU expression {
+    | expression OR expression {
 
         printf("i am inside comparaison\n");
         char bff[255]; 
@@ -954,6 +964,7 @@ assignment:
                 sprintf(buffer, "%s", $3.valeur ? $3.valeur : "");
                 
                 // Update the symbol's value
+
                 SetValueSymbol(found, buffer);
                 
                 // Create quadruplet
@@ -963,15 +974,16 @@ assignment:
                 
                 // Convert expression type to string for comparison
                 char* exprType = NULL;
+                printf("Type de l'expression: %d\n", $3.type);
                 switch($3.type) {
                     case ENTIER: exprType = TYPE_ENTIER; break;
                     case FLOTTANT: exprType = TYPE_FLOTTANT; break;
                     case CHAR: exprType = TYPE_CHAR; break;
                     case STRING: exprType = TYPE_STRING; break;
                     case BOOLEAN: exprType = TYPE_BOOLEAN; break;
-                    default: exprType = TYPE_ENTIER;
                 }
-                
+                printf("Type de l'expression: %s\n", exprType);
+                printf("Type de la variable: %s\n", found->type);
                 if (!areTypesCompatible(found->type, exprType)) {
                     semanticError("Type incompatible dans l'affectation.", line);
                 }
@@ -1000,8 +1012,9 @@ while_partie_une:
 
         printf("I'm inside while\n");
 
-        sauvDebut = qC;
         qC++;
+        
+        sauvDebut = qC;
     };
 
 while_partie_deux:
@@ -1013,7 +1026,6 @@ while_partie_deux:
             semanticError("Condition de boucle invalide", line);
         }
         // Branchement vers fin si condition n'est pas vrai
-        qC++;
         quad = creer_Q("BZ", "fin", " ", $1.valeur, qC);
         inserer_TQ(TQ, quad);
         push(P, quad);
@@ -1041,40 +1053,55 @@ while_partie_trois:
 for_partie_une:
     FOR PAR_OUV {
 
-        sauvDebut = qC;
+        printf("I'm inside for\n");
+       
         qC++;
+        sauvDebut = qC;
     };
 
 for_partie_deux:
+
     ID FROM INT TO INT PAR_FERM {
 
-    if($1.type != BOOLEAN) {
-            semanticError("Condition de boucle invalide", line);
-        }
-        // Branchement vers fin si condition n'est pas vrai
+        printf("Entrée dans for_partie_deux\n");
+
+        char temp[20]; 
+        int tempCounter = 0; 
+
+        sprintf(temp, "T%d", tempCounter++); 
+
+        // Utilisation dans creer_Q
+        char str5[20], str3[20];
+        sprintf(str5, "%d", $5);
+        sprintf(str3, "%d", $3);
+        quad = creer_Q("-", str5, str3, temp, qC);
+
+        inserer_TQ(TQ, quad);
+        afficherTQ(TQ);
+
+        // Vérifier si le résultat est inférieur à 0
         qC++;
-        quad = creer_Q("BZ", "fin", " ", $1.valeur, qC);
+        quad = creer_Q("BZ", "fin", " ", temp, qC); // Sauter si la condition est fausse
         inserer_TQ(TQ, quad);
         push(P, quad);
         afficherTQ(TQ);
-
     };
 
 for_partie_trois:
     corps {
+
+        printf("Entrée dans for_partie_trois\n");
 
         qC++;
         quad = pop(P); 
         updateLabel(quad, qC+1);
 
         // Branchement inconditionnel vers Debut
-
         char etiq[255];
         sprintf(etiq, "%d", sauvDebut);
         quad = creer_Q("BR", etiq, "", "", qC);
         inserer_TQ(TQ, quad);
         afficherTQ(TQ);
-
     };
 
 corps :

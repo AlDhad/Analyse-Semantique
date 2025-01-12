@@ -112,12 +112,10 @@ extern int yydebug;
     FROM = 313,                    /* FROM  */
     TO = 314,                      /* TO  */
     VIRGULE = 315,                 /* VIRGULE  */
-    OU = 316,                      /* OU  */
-    ET = 317,                      /* ET  */
-    SUPP = 318,                    /* SUPP  */
-    EGALE = 319,                   /* EGALE  */
-    PASEGALE = 320,                /* PASEGALE  */
-    MUL = 321                      /* MUL  */
+    SUPP = 316,                    /* SUPP  */
+    EGALE = 317,                   /* EGALE  */
+    PASEGALE = 318,                /* PASEGALE  */
+    MUL = 319                      /* MUL  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -140,7 +138,7 @@ struct {
         int type;
     } structure;
 
-#line 144 "parser.tab.h"
+#line 142 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
