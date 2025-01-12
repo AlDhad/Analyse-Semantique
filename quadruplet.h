@@ -20,6 +20,7 @@ typedef struct qNoeud
 typedef struct qTable
 {
     struct qNoeud *tete;
+    struct qNoeud *queue;
     int nb;
 
 } qTable;
@@ -37,6 +38,6 @@ void afficherQ(qNoeud* Q);
 void afficherTQDansFichier(qTable *TQ, const char *nomFichier);
 void afficherQDansFichier(qNoeud* Q, FILE *fichier) ;
 
-
+void mettreAJourResultat(qTable *TQ, int adresse, const char *nouveauResultat);
 
 #endif

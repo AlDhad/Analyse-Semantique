@@ -16,7 +16,7 @@ extern int sauvline;
 
 %option noyywrap
 
-lettre    [قفكهمنلءىوأ-ي]
+lettre    [قفكهعمنلءىوأ-ي]
 quote "'"
 dquote "\""
 
@@ -60,6 +60,7 @@ dquote "\""
      return CONST; }
 "إذا"     { 
      linecol=linecol+3;
+     printf("\nhelllllooooo\n");
      return IF; }
 "وإلا"  { 
      linecol=linecol+4;
