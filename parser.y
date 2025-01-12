@@ -156,8 +156,8 @@ struct {
 %type<structure> fonction
 %type<structure> parametre
 
-%right OU
-%right ET
+%right OR
+%right AND
 %right NOT INCREM DECREM
 %right INF INF_EGAL SUPP SUPP_EGAL EGALE PASEGALE
 %right PLUS MOINS
@@ -358,8 +358,8 @@ expression:
     | expression SUPP_EGAL expression
     | expression EQUAL expression
     | expression NOT_EQUAL expression
-    | expression ET expression
-    | expression OU expression
+    | expression AND expression
+    | expression OR expression
     ; 
 
 incrementation:
