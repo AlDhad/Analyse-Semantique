@@ -57,7 +57,7 @@ typedef struct Symbole
     char *type;                     
     char *valeur;               
     int nnumLigne;                
-    int adresseMem;    
+    int taille;    
     struct Symbole *suivant;        
     struct Symbole *precedent;        
 
@@ -75,7 +75,7 @@ typedef struct TableSymbole
 
 // Entete des fonctions
 /*************************************************************************************/
-Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *valeurInit, int numLigne, int adresseMem);
+Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *valeurInit, int numLigne, int taille);
 TableSymbole *creerTableSymbole();
 void insererSymbole(TableSymbole *table, Symbole *symbole);
 void afficherTableSymbole(TableSymbole *table);

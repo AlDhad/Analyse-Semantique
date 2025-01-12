@@ -212,12 +212,9 @@ void libererParametresList(ParametresList* list) {
 %type<type> type
 %type<structure> valeur
 %type<structure> tableau
-%type<structure> type_Struct
 %type<structure> variable
 %type<structure> expression
-%type<structure> declaration
 %type<structure> incrementation
-%type<structure> assignment
 %type<structure> parametreCall
 %type<structure> fonction
 %type<structure> call
@@ -248,6 +245,7 @@ programme:
 
     }
     functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS {
+        qC++;
         quad = creer_Q("fin", "", "", "", qC);
         inserer_TQ(TQ, quad); 
         afficherTableSymbole(TS); // afficher TS pour confirmer
@@ -328,25 +326,7 @@ tableau :
     ;
 
 type_Struct : 
-    ENREGISTREMENT ID DEB_CORPS declarations FIN_CORPS{
-        Symbole* found;
-        if (rechercherSymbole(TS, $2, &found)) {
-            semanticError("Structure Deja Déclaré", line);
-        }
-        
-        Symbole* sym = creerSymbole(
-            VARIABLE,    // category
-            $3,         // name
-            '',    // type
-            "",         // initial value
-            line,       // line number
-            0          // memory address
-        );
-        insererSymbole(TS, sym);
-        afficherTableSymbole(TS); // afficher TS pour confirmer
-        afficherTQ(TQ);
-    }
-    ;
+    ENREGISTREMENT ID DEB_CORPS declarations FIN_CORPS
 valeur:
     INT { 
         $$.type = ENTIER;
@@ -387,13 +367,20 @@ variable:
             semanticError("Tableau non declaree", line);
         }
         else{
-            if{
-                $3> found->adresseMem
+            if ($3 > found->taille) {
+                
                 semanticError("Index hors limites", line);
             }
             else{
                 $$.nom = $1;
-                $$.type = found.type;
+                switch(found->type[0]) {
+                    case 'E': $$.type = ENTIER; break;
+                    case 'F': $$.type = FLOTTANT; break;
+                    case 'S': $$.type = STRING; break;
+                    case 'C': $$.type = CHAR; break;
+                    case 'B': $$.type = BOOLEAN; break;
+                    default: $$.type = ENTIER;
+                }
             }
        }
     }
@@ -410,7 +397,14 @@ variable:
             }
             else{
                 $$.nom = $3;
-                $$.type = found.type;
+                switch(found->type[0]) {
+                    case 'E': $$.type = ENTIER; break;
+                    case 'F': $$.type = FLOTTANT; break;
+                    case 'S': $$.type = STRING; break;
+                    case 'C': $$.type = CHAR; break;
+                    case 'B': $$.type = BOOLEAN; break;
+                    default: $$.type = ENTIER;
+                }
             }
         }
 
@@ -803,6 +797,11 @@ expression:
         afficherTQDansFichier(TQ, "output.txt");
     }
     | PAR_OUV expression PAR_FERM
+    {
+        $$.nom = $2.nom;
+        $$.valeur = $2.valeur;
+        $$.type = $2.type;
+    }
 
     | expression INF expression {
 
@@ -1376,6 +1375,7 @@ declaration:
             line,       // line number
             0          // memory address
         );
+        
         insererSymbole(TS, sym);
         afficherTableSymbole(TS); // afficher TS pour confirmer
         afficherTQ(TQ);
@@ -1553,7 +1553,9 @@ parametre:
         $$.type = strdup(typeStr);
 
     }
-    | TABLE ID
+    | TABLE type ID {
+    
+    }
     | ENREGISTREMENT ID {printf("parametre correcte syntaxiquement\n");}
     ;
 instructions:
@@ -1743,10 +1745,10 @@ condition:
             quad = pop(P);
             updateLabel(quad, qC);
         }
-        
+       
         quad = creer_Q("finIf","", " ", "", qC);
         inserer_TQ(TQ, quad);
-        qC++;
+        
     }
     ;
 ifstatement:

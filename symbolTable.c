@@ -24,7 +24,7 @@ TableSymbole *creerTableSymbole()
 }
 
 // Création d'un symbole
-Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *valeur, int numLigne, int adresseMem)
+Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *valeur, int numLigne, int taille)
 
 {
     Symbole *symbole = (Symbole *)malloc(sizeof(Symbole));
@@ -39,7 +39,7 @@ Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *v
     symbole->type = strdup(type);
     symbole->valeur = strdup(valeur);
     symbole->nnumLigne = numLigne;
-    symbole->adresseMem = adresseMem;
+    symbole->taille = taille;
 
     if (categorie == FUNCTION)
     {
@@ -114,7 +114,7 @@ void afficherTableSymbole(TableSymbole *table) {
                 param = param->suivant;
             }
         }
-        printf("| %-20s | %-10s | %-10s | %-15d | %-15s | %-30s |\n", current->nom, current->type, categorieToString(current->categorie), current->adresseMem, current->valeur, infosFonction);
+        printf("| %-20s | %-10s | %-10s | %-15d | %-15s | %-30s |\n", current->nom, current->type, categorieToString(current->categorie), current->taille, current->valeur, infosFonction);
         current = current->suivant;
     }
     printf("---------------------------------------------------------------------------------------------------------------------------\n");
@@ -221,7 +221,7 @@ void afficherInfoFonction(Symbole *symbole) {
     InfoFonction *info = symbole->infoFonction;
     printf("Nom de la fonction: %s\n", symbole->nom);
     printf("Type de retour: %s\n", symbole->type);
-    printf("Adresse mémoire: %d\n", symbole->adresseMem);
+    printf("Adresse mémoire: %d\n", symbole->taille);
     printf("Nombre de paramètres: %d\n", info->nbParametres);
     printf("Liste des paramètres:\n");
     Parametre *current = info->parametres;
