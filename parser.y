@@ -100,6 +100,10 @@ bool isValidLiteralForType(const char* literal, const char* type) {
         strtof(literal, &endptr);
         return *endptr == '\0';
     }
+    else if (strcmp(type, TYPE_BOOLEAN) == 0) {
+        // Check if string is "true" or "false"
+        return (strcmp(literal, "true") == 0 || strcmp(literal, "false") == 0);
+    }
     // Add more type checks as needed
     return false;
 }
@@ -224,7 +228,7 @@ void libererParametresList(ParametresList* list) {
 %right OR
 %right AND
 %right NOT INCREM DECREM
-%right INF INF_EGAL SUPP SUPP_EGAL EGALE PASEGALE
+%right INF INF_EGAL SUP SUPP_EGAL EGALE PASEGALE
 %right PLUS MOINS
 %right MUL DIV MOD
 %left  PUISS 
@@ -353,10 +357,34 @@ variable:
             }
             $$.valeur = strdup(found->valeur);
             }
-            else{
-                semanticError("Variable non declaree", line);
-            }
+                else {
+            //on check dabord si il ya une fonction en cours de traitement 
+            if (saveFunctionDec != NULL) {
+                //on check si la variable est un parametre de la fonction
+                Parametre *param;
+                Symbole* found;
+                rechercherSymbole(TS, saveFunctionDec, &found);
+                if (rechercherParametre(found, $1, &param)) {
+                    char* exprType = NULL;
+                    switch(param->type[0]) {
+                    case 'E': $$.type = ENTIER; break;
+                    case 'F': $$.type = FLOTTANT; break;
+                    case 'S': $$.type = STRING; break;
+                    case 'C': $$.type = CHAR; break;
+                    case 'B': $$.type = BOOLEAN; break;
+                    default: $$.type = ENTIER;
+                }
+                $$.valeur = strdup("0");
+                    
+                } else {
+                    semanticError("Variable non declaree", line);
+                }
+            } else {
+            semanticError("Variable non declaree", line);
         }
+    }
+            }
+        
     ;
 expression:
     valeur  
@@ -661,7 +689,47 @@ expression:
         afficherTQ(TQ);
         afficherTQDansFichier(TQ, "output.txt");
     }
-    | NOT expression 
+    | NOT expression {
+        printf("i am inside NOT operation\n");
+        char bff[255]; 
+        Symbole* found1;
+        
+        // Initialize result structure
+        $$.nom = NULL;
+        $$.valeur = malloc(255);
+        if ($$.valeur == NULL) {
+            semanticError("Memory allocation failed", line);
+        }
+
+        // Get value for operand
+        char *val1;
+        val1 = $2.valeur;            
+        // Perform NOT operation based on type
+        if ($2.type == BOOLEAN) {
+            int result = !atoi(val1);
+            sprintf($$.valeur, "%d", result);
+            $$.type = BOOLEAN;
+        } else {
+            semanticError("Invalid type for NOT operation", line);
+        }
+
+        // Generate quadruplet
+        qC++;
+        char resultVarName[20];
+        sprintf(resultVarName, "%s%d", "R", qC);
+        $$.nom = resultVarName;
+        quad = creer_Q("!", 
+                      $2.nom ? $2.nom : $2.valeur,
+                      "",
+                      $$.nom,
+                      qC);        
+        afficherQ(quad);        
+        inserer_TQ(TQ, quad);
+
+        afficherTableSymbole(TS);
+        afficherTQ(TQ);
+        afficherTQDansFichier(TQ, "output.txt");
+    }
     | PAR_OUV expression PAR_FERM
 
     | expression INF expression {
@@ -709,7 +777,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q(">", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -766,7 +834,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("=>", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -779,7 +847,7 @@ expression:
         afficherTQDansFichier(TQ, "output.txt");
 
     }
-    | expression SUPP expression {
+    | expression SUP expression {
 
         printf("i am inside comparaison\n");
         char bff[255]; 
@@ -824,7 +892,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("<", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -881,7 +949,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("<=", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -944,7 +1012,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("==", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -1006,7 +1074,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("!=", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -1051,7 +1119,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("&&", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -1097,7 +1165,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
+        quad = creer_Q("||", 
                       $1.nom ? $1.nom : $1.valeur,
                       $3.nom ? $3.nom : $3.valeur,
                       $$.nom,
@@ -1260,7 +1328,7 @@ declaration:
         }
         
         // Check if the expression is valid for the type
-        if (!isValidLiteralForType($4.valeur, typeStr)) {
+        if (!($4.valeur, typeStr)) {
             semanticError("Invalid literal for type", line);
         }
         
@@ -1597,8 +1665,34 @@ assignment:
     ;
 
 condition:
-    IF PAR_OUV expression PAR_FERM corps elsebloc  {printf("condition correcte syntaxiquement\n");}
+    ifstatement corps elsebloc  
+        {
+        while (!Pempty(P)) {
+            quad = pop(P);
+            updateLabel(quad, qC);
+        }
+        
+        quad = creer_Q("finIf","", " ", "", qC);
+        inserer_TQ(TQ, quad);
+        qC++;
+    }
     ;
+ifstatement:
+    IF PAR_OUV expression PAR_FERM{
+        //vérifier si le resultat de l'expression est un boolean
+        if($3.type != BOOLEAN){
+            semanticError("L'expression doit être un boolean", line);
+        }else{
+            qC++;
+            //branchement en cas de faux
+            quad = creer_Q("BZ","temp", " ", $3.valeur, qC);
+            inserer_TQ(TQ, quad);
+            //sauvegarder qC pour la mise a jour de l'adresse de branchement dans la pile des adresses
+            push(P, quad);
+            
+        }
+    }
+
 
 loop:
     while_partie_une while_partie_deux while_partie_trois

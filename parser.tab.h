@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 160 "parser.y"
+#line 166 "parser.y"
 
     #include "symbolTable.h"  // Include it again here to make sure types are available for the union
 
@@ -118,10 +118,9 @@ extern int yydebug;
     FROM = 313,                    /* FROM  */
     TO = 314,                      /* TO  */
     VIRGULE = 315,                 /* VIRGULE  */
-    SUPP = 316,                    /* SUPP  */
-    EGALE = 317,                   /* EGALE  */
-    PASEGALE = 318,                /* PASEGALE  */
-    MUL = 319                      /* MUL  */
+    EGALE = 316,                   /* EGALE  */
+    PASEGALE = 317,                /* PASEGALE  */
+    MUL = 318                      /* MUL  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -130,7 +129,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 110 "parser.y"
+#line 170 "parser.y"
 
     int type;
     char str[255];
@@ -147,7 +146,7 @@ union YYSTYPE
     ParametreNode* parametreNode;
     ParametresList* parametresList;
 
-#line 144 "parser.tab.h"
+#line 150 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
