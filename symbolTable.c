@@ -60,6 +60,24 @@ Symbole *creerSymbole(CategorieSymbole categorie, char *nom, char *type, char *v
     return symbole;
 }
 //fonction d'insertion d'un symbole dans la table des symboles
+bool rechercherParametre(Symbole *fonction, const char *nomParam, Parametre **parametreTrouve) {
+    if (fonction == NULL || fonction->categorie != FUNCTION || fonction->infoFonction == NULL) {
+        *parametreTrouve = NULL;
+        return false;
+    }
+
+    Parametre *current = fonction->infoFonction->parametres;
+    while (current != NULL) {
+        if (strcmp(current->nom, nomParam) == 0) {
+            *parametreTrouve = current;
+            return true;
+        }
+        current = current->suivant;
+    }
+
+    *parametreTrouve = NULL;
+    return false;
+}
 void insererSymbole(TableSymbole *table, Symbole *symbole) {
     if (table->debut == NULL) {
         // La table est vide, insérer au début
@@ -81,14 +99,35 @@ void insererSymbole(TableSymbole *table, Symbole *symbole) {
 void afficherTableSymbole(TableSymbole *table) {
     Symbole *current = table->debut;
     printf("Table des symboles (taille: %zu):\n", table->taille);
-    printf("---------------------------------------------------------------------------------------\n");
-    printf("| %-20s | %-10s | %-10s | %-15s | %-15s |\n", "Nom", "Type", "Catégorie", "Adresse mémoire", "Valeur Init");
-    printf("---------------------------------------------------------------------------------------\n");
+    printf("---------------------------------------------------------------------------------------------------------------------------\n");
+    printf("| %-20s | %-10s | %-10s | %-15s | %-15s | %-30s |\n", "Nom", "Type", "Catégorie", "Adresse mémoire", "Valeur Init", "Infos Fonction");
+    printf("---------------------------------------------------------------------------------------------------------------------------\n");
     while (current != NULL) {
-        printf("| %-20s | %-10s | %-10d | %-15d | %-15s |\n", current->nom, current->type, current->categorie, current->adresseMem, current->valeur);
+        char infosFonction[256] = "";
+        if (current->categorie == FUNCTION) {
+            snprintf(infosFonction, sizeof(infosFonction), "Nb Params: %d", current->infoFonction->nbParametres);
+            Parametre *param = current->infoFonction->parametres;
+            while (param != NULL) {
+                char paramInfo[64];
+                snprintf(paramInfo, sizeof(paramInfo), ", %s: %s", param->nom, param->type);
+                strncat(infosFonction, paramInfo, sizeof(infosFonction) - strlen(infosFonction) - 1);
+                param = param->suivant;
+            }
+        }
+        printf("| %-20s | %-10s | %-10s | %-15d | %-15s | %-30s |\n", current->nom, current->type, categorieToString(current->categorie), current->adresseMem, current->valeur, infosFonction);
         current = current->suivant;
     }
-    printf("---------------------------------------------------------------------------------------\n");
+    printf("---------------------------------------------------------------------------------------------------------------------------\n");
+}
+
+// Fonction pour convertir la catégorie en chaîne de caractères
+const char* categorieToString(CategorieSymbole categorie) {
+    switch (categorie) {
+        case VARIABLE: return "VARIABLE";
+        case CONSTANTE: return "CONSTANTE";
+        case FUNCTION: return "FUNCTION";
+        default: return "UNKNOWN";
+    }
 }
 
 //fonction de recherche d'un symbole
@@ -135,8 +174,28 @@ void supprimerSymbole(TableSymbole *table, const char *nom) {
     }
 }
 
-//fonction pour ajouter un paramètre à une fonction
-void ajouterParametre(InfoFonction *info, const char *nom, const char *type) {
+void ajouterParametre(Symbole *fonction, const char *nom, const char *type) {
+    if (fonction == NULL) {
+        fprintf(stderr, "Erreur: pointeur de fonction NULL\n");
+        return;
+    }
+
+    if (fonction->categorie != FUNCTION) {
+        fprintf(stderr, "Erreur: le symbole n'est pas une fonction\n");
+        return;
+    }
+
+    if (fonction->infoFonction == NULL) {
+        fprintf(stderr, "Erreur: infoFonction non initialisé\n");
+        fonction->infoFonction = (InfoFonction *)malloc(sizeof(InfoFonction));
+        if (fonction->infoFonction == NULL) {
+            fprintf(stderr, "Erreur: impossible d'allouer la mémoire pour infoFonction\n");
+            exit(1);
+        }
+        fonction->infoFonction->nbParametres = 0;
+        fonction->infoFonction->parametres = NULL;
+    }
+
     Parametre *param = (Parametre *)malloc(sizeof(Parametre));
     if (param == NULL) {
         fprintf(stderr, "Erreur: impossible d'allouer la mémoire pour le paramètre\n");
@@ -146,16 +205,16 @@ void ajouterParametre(InfoFonction *info, const char *nom, const char *type) {
     param->type = strdup(type);
     param->suivant = NULL;
 
-    if (info->parametres == NULL) {
-        info->parametres = param;
+    if (fonction->infoFonction->parametres == NULL) {
+        fonction->infoFonction->parametres = param;
     } else {
-        Parametre *current = info->parametres;
+        Parametre *current = fonction->infoFonction->parametres;
         while (current->suivant != NULL) {
             current = current->suivant;
         }
         current->suivant = param;
     }
-    info->nbParametres++;
+    fonction->infoFonction->nbParametres++;
 }
 //fonction pour afficher les informations d'une fonction
 void afficherInfoFonction(Symbole *symbole) {

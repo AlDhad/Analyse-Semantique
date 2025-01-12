@@ -44,6 +44,12 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 160 "parser.y"
+
+    #include "symbolTable.h"  // Include it again here to make sure types are available for the union
+
+#line 53 "parser.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -126,21 +132,24 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 110 "parser.y"
+#line 164 "parser.y"
 
-int type;
-char str[255];
-char charv;
-int intv ; 
-float flt;
-bool boolean;
-struct {
+    int type;
+    char str[255];
+    char charv;
+    int intv; 
+    float flt;
+    bool boolean;
+    struct {
         char* valeur;
         char* nom;
         int type;
     } structure;
+    ParametreUnion parametreUnion;
+    ParametreNode* parametreNode;
+    ParametresList* parametresList;
 
-#line 144 "parser.tab.h"
+#line 153 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

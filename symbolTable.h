@@ -5,6 +5,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+//pour la manipulation des parametres dans l'union
+
+typedef struct {
+    char* nom;
+    char* type;
+} ParametreUnion;
+
+typedef struct ParametreNode {
+    ParametreUnion parametre;
+    struct ParametreNode* next;
+} ParametreNode;
+
+typedef struct {
+    ParametreNode* head;
+    ParametreNode* tail;
+    int count;
+} ParametresList;
 
 /* Structures */
 /*************************************************************************************/
@@ -64,7 +81,7 @@ void insererSymbole(TableSymbole *table, Symbole *symbole);
 void afficherTableSymbole(TableSymbole *table);
 bool rechercherSymbole(TableSymbole *table, const char *nom, Symbole **symboleTrouve);
 void supprimerSymbole(TableSymbole *table, const char *nom);
-void ajouterParametre(InfoFonction *info, const char *nom, const char *type);
+void ajouterParametre(Symbole *fonction, const char *nom, const char *type);
 void afficherInfoFonction(Symbole *symbole);
 int isIntOrfloat(int x);
 int isInt(int x);
@@ -72,4 +89,6 @@ int isFlt(int x);
 void SetTypeSymbol(Symbole* symbole, char* type);
 void SetNomSymbol(Symbole* symbole, char* nom);
 void SetValueSymbol(Symbole* symbole, char* value);
+const char* categorieToString(CategorieSymbole categorie);
+bool rechercherParametre(Symbole *fonction, const char *nomParam, Parametre **parametreTrouve) ;
 #endif

@@ -10,6 +10,7 @@
     #include  <ctype.h>
 
 
+
     //declarations 
 
     typedef struct {
@@ -22,13 +23,18 @@
     TableSymbole *TS;
     qTable *TQ;
     qPile *P;
+    
 
     qNoeud* quad;
     Symbole* node;
-
+    char* currentFunctionCalled=NULL;
+    ParametresList* currentParametresList;
     int sauvLabel;
+    char* saveFunctionDec=NULL;
+    bool itReturn=false;
 
     int qC = 0;
+    
 
     extern int colnum ;
     extern int lignenum ;
@@ -103,23 +109,77 @@ void semanticError(const char* message, int line) {
     fprintf(stderr, "Semantic error at line %d: %s\n", line, message); 
     exit(1);
 }
+ParametresList* creerParametresList() {
+    ParametresList* list = (ParametresList*)malloc(sizeof(ParametresList));
+    list->head = NULL;
+    list->tail = NULL;
+    list->count = 0;
+    return list;
+}
+
+bool ajouterParametreUnion(ParametresList* list, const char* nom, const char* type) {
+    // Check if the parameter already exists
+    ParametreNode* current = list->head;
+    while (current) {
+        if (strcmp(current->parametre.nom, nom) == 0) {
+            return false; // Parameter already exists
+        }
+        current = current->next;
+    }
+
+    // Add the new parameter
+    ParametreNode* newNode = (ParametreNode*)malloc(sizeof(ParametreNode));
+    newNode->parametre.nom = strdup(nom);
+    newNode->parametre.type = strdup(type);
+    newNode->next = NULL;
+
+    if (list->tail) {
+        list->tail->next = newNode;
+    } else {
+        list->head = newNode;
+    }
+    list->tail = newNode;
+    list->count++;
+    return true;
+}
+
+void libererParametresList(ParametresList* list) {
+    ParametreNode* current = list->head;
+    while (current) {
+        ParametreNode* next = current->next;
+        free(current->parametre.nom);
+        free(current->parametre.type);
+        free(current);
+        current = next;
+    }
+    free(list);
+}
+
+
 %}
+%code requires {
+    #include "symbolTable.h"  // Include it again here to make sure types are available for the union
+}
 
-
-%union
-{
-int type;
-char str[255];
-char charv;
-int intv ; 
-float flt;
-bool boolean;
-struct {
+%union {
+    int type;
+    char str[255];
+    char charv;
+    int intv; 
+    float flt;
+    bool boolean;
+    struct {
         char* valeur;
         char* nom;
         int type;
     } structure;
+    ParametreUnion parametreUnion;
+    ParametreNode* parametreNode;
+    ParametresList* parametresList;
 }
+
+
+
 
 %token  DEBUT FIN WHILE FOR
 %token  PRINT INPUT FONCTION VIDE RETURN
@@ -154,7 +214,10 @@ struct {
 %type<structure> assignment
 %type<structure> parametreCall
 %type<structure> fonction
-%type<structure> parametre
+%type<structure> call
+%type<parametreUnion> parametre
+%type<parametresList> parametres
+%type<parametreUnion> declarationfonction
 
 %right OU
 %right ET
@@ -176,6 +239,7 @@ programme:
         TS = creerTableSymbole();  
         TQ = initialiserTQ() ;
         P = initialiserP();
+
     }
     functions DEBUT DEB_CORPS declarations instructions FIN SEMICOLON FIN_CORPS {
         quad = creer_Q("fin", "", "", "", qC);
@@ -831,18 +895,136 @@ functions:
     | functions fonction 
     ;
 fonction:
-    type FONCTION ID PAR_OUV parametres PAR_FERM corps {printf("fonction correcte syntaxiquement\n");}
-    | FONCTION ID PAR_OUV parametres PAR_FERM corps {printf("fonction correcte syntaxiquement\n");}
+    declarationfonction PAR_OUV parametres PAR_FERM {
+        printf("je suis dans fonction1\n");
+        printf("Function parameters:\n");
+        if ($3->head != NULL) {
+            ParametreNode* current = $3->head;
+            printf("hilllo");
+            Symbole* found;
+            //ajouter les parametres de la fonction à la table des symboles
+            printf("Parametre: %s %s\n", current->parametre.nom, current->parametre.type);
+            printf("le nom de la fonction est : %s\n", $1.nom);
+            if(rechercherSymbole(TS, $1.nom, &found)){
+            }
+
+            while (current) {            
+            ajouterParametre(found, current->parametre.nom, current->parametre.type);
+            current = current->next;
+            }
+            printf("\naffichage des infos de la fonction \n"); 
+         afficherInfoFonction(found);
+         
+
+        }
+        saveFunctionDec=strdup($1.nom);
+         
+    } corps {
+        
+        //on check si c'est une fonction (a un type != void ) et ne retourne pas de valeur
+        if($1.type[0] != 'V' && !itReturn){
+            semanticError("La fonction ne retourne pas de valeur", line);
+        }
+        printf("fonction correcte syntaxiquement\n"); afficherTableSymbole(TS);   
+        saveFunctionDec=NULL;
+        }
+    ;
+declarationfonction :
+    type FONCTION ID {        
+        Symbole* found;
+        if (rechercherSymbole(TS, $3, &found)) {
+            semanticError("Function already declared", line);
+        }
+        
+        // Convert the type token to string
+        char* typeStr;
+        switch($1) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        //création du symbole de la fonction
+        Symbole* sym = creerSymbole(
+            FUNCTION,    // category
+            $3,         // name
+            typeStr,    // type
+            "",         // initial value
+            line,       // line number
+            0          // memory address
+        );
+        $$.nom = strdup($3);
+        $$.type = strdup(typeStr);
+        
+        insererSymbole(TS, sym);
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+
+    }
+    | FONCTION ID{
+        Symbole* found;
+        if (rechercherSymbole(TS, $2, &found)) {
+            semanticError("Function already declared", line);
+        }
+        //création du symbole de la fonction
+        Symbole* sym = creerSymbole(
+            FUNCTION,    // category
+            $2,         // name
+            "VOID",    // type
+            "",         // initial value
+            line,       // line number
+            0          // memory address
+        );
+        $$.nom = strdup($2);
+        $$.type = strdup("VOID");
+        
+        insererSymbole(TS, sym);
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+    }
     ;
 
 parametres:
-    /* empty */
-    | parametre VIRGULE parametres {printf("parametres correcte syntaxiquement\n");}
-    | parametre
+    /* empty */ {
+        $$ = creerParametresList();  // Always create a new list for empty case
+    }
+    | parametres VIRGULE parametre {
+        // Use the existing list from $1
+        $$ = $1;  
+        // Add the new parameter to the list
+        if (!ajouterParametreUnion($$, $3.nom, $3.type)) {
+            semanticError("Parametre deja declare", line);
+        }
+    }
+    | parametre {
+        // Create new list for single parameter
+        $$ = creerParametresList();
+        // Add the parameter to the new list
+        if (!ajouterParametreUnion($$, $1.nom, $1.type)) {
+            semanticError("Parametre deja declare", line);
+        }
+    }
     ;
     
+    
 parametre:
-    type ID
+    type ID {
+        //remplissage des champs du parametre 
+        $$.nom = strdup($2);
+        char* typeStr;
+        switch($1) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        $$.type = strdup(typeStr);
+
+    }
     | TABLE ID
     | ENREGISTREMENT ID {printf("parametre correcte syntaxiquement\n");}
     ;
@@ -874,12 +1056,37 @@ write:
     ;
 
 retourner:
-    RETURN expression {printf("retourner correcte syntaxiquement\n");}
+    RETURN expression {
+        //on check si le type de retour est compatible avec le type de la fonction
+        
+        Symbole* found;
+        printf("voici le nom de la fonction %s\n", saveFunctionDec);
+        if (rechercherSymbole(TS, saveFunctionDec, &found)) {
+            printf("je suis dans retourner\n");
+            if(found->type[0] == 'V'){
+                semanticError("La fonction ne retourne pas de valeur", line);
+            }
+            char* exprType = NULL;
+                switch($2.type) {
+                    case ENTIER: exprType = TYPE_ENTIER; break;
+                    case FLOTTANT: exprType = TYPE_FLOTTANT; break;
+                    case CHAR: exprType = TYPE_CHAR; break;
+                    case STRING: exprType = TYPE_STRING; break;
+                    case BOOLEAN: exprType = TYPE_BOOLEAN; break;
+                    default: exprType = TYPE_ENTIER;
+                }
+            if (!areTypesCompatible(found->type, exprType)) {
+                semanticError("Type de retour incompatible avec la fonction", line);
+            }
+            itReturn = true;
+        } else {
+          semanticError("Fonction non declaree", line);
+        }
+        }
     ;
 
 assignment:
-    parametre ASSIGN expression SEMICOLON
-    | ID ASSIGN expression {
+    ID ASSIGN expression {
         Symbole* found;
         if (rechercherSymbole(TS, $1, &found)) { // is declared
             if (found->categorie == VARIABLE) {  
@@ -915,11 +1122,88 @@ assignment:
                 semanticError("Identifier is not a variable", line);
             }
         } else {
+            //on check dabord si il ya une fonction en cours de traitement 
+            if (saveFunctionDec != NULL) {
+                //on check si la variable est un parametre de la fonction
+                Parametre *param;
+                Symbole* found;
+                rechercherSymbole(TS, saveFunctionDec, &found);
+                if (rechercherParametre(found, $1, &param)) {
+                    //on check si le type de retour est compatible avec le type de la variable
+                    char* exprType = NULL;
+                    switch($3.type) {
+                        case ENTIER: exprType = TYPE_ENTIER; break;
+                        case FLOTTANT: exprType = TYPE_FLOTTANT; break;
+                        case CHAR: exprType = TYPE_CHAR; break;
+                        case STRING: exprType = TYPE_STRING; break;
+                        case BOOLEAN: exprType = TYPE_BOOLEAN; break;
+                        default: exprType = TYPE_ENTIER;
+                    }
+                    if (!areTypesCompatible(exprType, found->type)) {
+                        semanticError("Type incompatible dans l'affectation.", line);
+                    }
+                } else {
+                    semanticError("Variable non declaree", line);
+                }
+            } else {
             semanticError("Variable non declaree", line);
         }
+    } }SEMICOLON
+    | ID ASSIGN call{
+        Symbole* found;
+        if (rechercherSymbole(TS, $1, &found)) { // is declared
+        //on check si le type de retour est compatible avec le type de la variable
+        char* typeStr;
+        switch($3.type) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        if (!areTypesCompatible(found->type, typeStr)) {
+            semanticError("Type incompatible dans l'affectation.", line);
+        }
+        qC++;        
+        // Create a buffer for the value
+        char buffer[256];
+        sprintf(buffer, "%s", $3.valeur ? $3.valeur : "");
+        // Update the symbol's value
+        SetValueSymbol(found, buffer);        
+        // Create quadruplet
+        quad = creer_Q(":=", $1, " ", buffer, qC);
+        inserer_TQ(TQ, quad);
+        afficherTQ(TQ);}
+        else {
+             //on check dabord si il ya une fonction en cours de traitement 
+            if (saveFunctionDec != NULL) {
+                Symbole* found;
+                Parametre *param;
+                rechercherSymbole(TS, saveFunctionDec, &found);
+                //on check si la variable est un parametre de la fonction
+                if (rechercherParametre(found, $1, &param)) {
+                    //on check si le type de retour est compatible avec le type de la variable
+                    char* exprType = NULL;
+                    switch($3.type) {
+                        case ENTIER: exprType = TYPE_ENTIER; break;
+                        case FLOTTANT: exprType = TYPE_FLOTTANT; break;
+                        case CHAR: exprType = TYPE_CHAR; break;
+                        case STRING: exprType = TYPE_STRING; break;
+                        case BOOLEAN: exprType = TYPE_BOOLEAN; break;
+                        default: exprType = TYPE_ENTIER;
+                    }
+                    if (!areTypesCompatible(exprType, found->type)) {
+                        semanticError("Type incompatible dans l'affectation.", line);
+                    }
+                } else {
+                    semanticError("Variable non declaree", line);
+                }
+            } else {
+            semanticError("Variable non declaree", line);
+        }
+        }
     } SEMICOLON
-    | parametre ASSIGN call SEMICOLON
-    | ID ASSIGN call SEMICOLON
     ;
 
 condition:
@@ -1024,16 +1308,97 @@ elifkey:
 
 
 call:
-    ID PAR_OUV parametresCall PAR_FERM 
+    ID 
+    {
+        //affectation du nom de la fonction courrante 
+
+        currentFunctionCalled = strdup($1);
+        //initialisation de la liste des parametres
+        currentParametresList = creerParametresList();
+        
+    }
+        PAR_OUV parametresCall PAR_FERM {
+        $$.nom = strdup($1);
+        //on check si la fonction existe déja dans la table des symboles
+        Symbole* found;
+        if (rechercherSymbole(TS, $1, &found)) {
+            if (found->categorie == FUNCTION) {                
+                if (strcmp(found->type, TYPE_ENTIER) == 0) {
+                    $$.type = ENTIER;
+                } else if (strcmp(found->type, TYPE_FLOTTANT) == 0) {
+                    $$.type = FLOTTANT;
+                } else if (strcmp(found->type, TYPE_CHAR) == 0) {
+                    $$.type = CHAR;
+                } else if (strcmp(found->type, TYPE_STRING) == 0) {
+                    $$.type = STRING;
+                } else if (strcmp(found->type, TYPE_BOOLEAN) == 0) {
+                    $$.type = BOOLEAN;
+                }
+                $$.valeur = strdup(found->valeur);
+                //on vérifie le nombre de parametres est le meme 
+                if (found->infoFonction->nbParametres != currentParametresList->count) {
+                    semanticError("Nombre de parametres incorrect", line);
+                }else
+                {
+                    //on check pour chaque parametre la compatibilité de type 
+                    ParametreNode* current = currentParametresList->head;
+                    Parametre* currentFonction = found->infoFonction->parametres;
+                    while (current) {
+                        if (!areTypesCompatible(current->parametre.type, currentFonction->type)) {
+                            semanticError("Type incompatible dans l'appel de fonction", line);
+                        }
+                        current = current->next;
+                        currentFonction = currentFonction->suivant;
+                    }
+                    // on crée le quadruplet pour l'appel de fonction
+                    
+                    //on fin , on rend la fonction courante et les parametres à NULL
+                    currentFunctionCalled = NULL;
+                    currentParametresList = NULL;
+                    //on push la ligne suivante dans la pile des adresses
+                }
+            }
+            else{
+                semanticError("Identifier is not a function", line);
+            }
+        } else {
+            semanticError("Function not declared", line);
+        }
+        
+    }
+    
     ;
  
      
 
 parametresCall:
     /* empty */
-    | parametreCall VIRGULE parametresCall
-    | parametreCall
-    {printf("parametres de l'appel du fonction correcte syntaxiquement\n");}
+    | parametresCall VIRGULE parametreCall{
+        char* typeStr;
+        switch($3.type) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        //ajouter le nouveau parametre à la liste des parametres
+        ajouterParametreUnion(currentParametresList, $3.nom ? $3.nom : (char*)$3.valeur, typeStr);
+            
+    }
+    | parametreCall{
+        char* typeStr;
+        switch($1.type) {
+            case ENTIER: typeStr = TYPE_ENTIER; break;
+            case FLOTTANT: typeStr = TYPE_FLOTTANT; break;
+            case CHAR: typeStr = TYPE_CHAR; break;
+            case STRING: typeStr = TYPE_STRING; break;
+            case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
+            default: typeStr = TYPE_ENTIER; // default case
+        }
+        ajouterParametreUnion(currentParametresList, $1.nom ? $1.nom : (char*)$1.valeur, typeStr) ;
+    }
     ;
     
 parametreCall:
