@@ -1745,7 +1745,7 @@ condition:
             quad = pop(P);
             updateLabel(quad, qC);
         }
-       
+        qC++;
         quad = creer_Q("finIf","", " ", "", qC);
         inserer_TQ(TQ, quad);
         

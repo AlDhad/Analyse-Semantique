@@ -60,7 +60,6 @@ dquote "\""
      return CONST; }
 "إذا"     { 
      linecol=linecol+3;
-     printf("\nhelllllooooo\n");
      return IF; }
 "وإلا"  { 
      linecol=linecol+4;
