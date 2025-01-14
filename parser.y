@@ -309,8 +309,9 @@ tableau :
             case STRING: typeStr = TYPE_STRING; break;
             case BOOLEAN: typeStr = TYPE_BOOLEAN; break;
             default: typeStr = TYPE_ENTIER; // default case
-        }
-        
+        };
+        $$.type=$2;
+        $$.nom=$3;
         Symbole* sym = creerSymbole(
             VARIABLE,    // category
             $3,         // name
@@ -1561,7 +1562,68 @@ retourner:
     ;
 
 assignment:
-    ID ASSIGN expression {
+    tableau ASSIGN expression{
+        Symbole* found;
+        if (rechercherSymbole(TS, $1.nom, &found)) { 
+            if (found->categorie == VARIABLE) {  
+                qC++;
+                // Create a buffer for the value
+                char buffer[256];
+                sprintf(buffer, "%s", $3.valeur ? $3.valeur : "");
+                // Update the symbol's value
+                SetValueSymbol(found, buffer);
+                // Create quadruplet
+                quad = creer_Q(":=", $1.nom, " ", buffer, qC);
+                inserer_TQ(TQ, quad);
+                 afficherTQ(TQ);
+                // Convert expression type to string for comparison
+                char* exprType = NULL;
+                printf("Type de l'expression: %d\n", $3.type);
+                switch($3.type) {
+                    case ENTIER: exprType = TYPE_ENTIER; break;
+                    case FLOTTANT: exprType = TYPE_FLOTTANT; break;
+                    case CHAR: exprType = TYPE_CHAR; break;
+                    case STRING: exprType = TYPE_STRING; break;
+                    case BOOLEAN: exprType = TYPE_BOOLEAN; break;
+                }
+                printf("Type de l'expression: %s\n", exprType);
+                printf("Type de la variable: %s\n", found->type);
+                if (!areTypesCompatible(found->type, exprType)) {
+                    semanticError("Type incompatible dans l'affectation.", line);
+                }
+            } else {
+                semanticError("Identifier is not a variable", line);
+            }
+        } else {
+            //on check dabord si il ya une fonction en cours de traitement 
+            if (saveFunctionDec != NULL) {
+                //on check si la variable est un parametre de la fonction
+                Parametre *param;
+                Symbole* found;
+                rechercherSymbole(TS, saveFunctionDec, &found);
+                if (rechercherParametre(found, $1.nom, &param)) {
+                    //on check si le type de retour est compatible avec le type de la variable
+                    char* exprType = NULL;
+                    switch($3.type) {
+                        case ENTIER: exprType = TYPE_ENTIER; break;
+                        case FLOTTANT: exprType = TYPE_FLOTTANT; break;
+                        case CHAR: exprType = TYPE_CHAR; break;
+                        case STRING: exprType = TYPE_STRING; break;
+                        case BOOLEAN: exprType = TYPE_BOOLEAN; break;
+                        default: exprType = TYPE_ENTIER;
+                    }
+                    if (!areTypesCompatible(exprType, found->type)) {
+                        semanticError("Type incompatible dans l'affectation.", line);
+                    }
+                } else {
+                    semanticError("Variable non declaree", line);
+                }
+            } else {
+            semanticError("Variable non declaree", line);
+        }
+    } 
+    }
+    | ID ASSIGN expression {
         Symbole* found;
         if (rechercherSymbole(TS, $1, &found)) { // is declared
             if (found->categorie == VARIABLE) {  

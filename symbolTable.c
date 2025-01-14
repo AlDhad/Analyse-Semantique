@@ -291,3 +291,97 @@ void SetValueSymbol(Symbole* symbole, char* value) {
         symbole->valeur = strdup(value);
     }
 }
+
+// Fonction pour convertir un tableau d'entiers en une chaîne CSV
+char *convertirTableauEnCSV(int *tableau, int taille) {
+    char *resultat = malloc(1024); // Allouer une chaîne assez grande
+    if (!resultat) return NULL;
+
+    resultat[0] = '\0'; // Initialiser comme une chaîne vide
+    for (int i = 0; i < taille; i++) {
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%d", tableau[i]);
+        strcat(resultat, buffer);
+        if (i < taille - 1) strcat(resultat, ",");
+    }
+    return resultat;
+}
+
+// Exemple d'utilisation
+void ajouterValeurTableau(Symbole *symbole, int *tableau, int taille) {
+    symbole->valeur = convertirTableauEnCSV(tableau, taille);
+    symbole->taille = taille;
+}
+int *convertirCSVEnTableau(char *csv, int *taille) {
+    int *tableau = malloc(1024 * sizeof(int));
+    if (!tableau) return NULL;
+
+    char *token = strtok(csv, ",");
+    int index = 0;
+    while (token != NULL) {
+        tableau[index++] = atoi(token);
+        token = strtok(NULL, ",");
+    }
+    *taille = index;
+    return tableau;
+}
+
+void lireValeursTableau(Symbole *symbole) {
+    int taille;
+    int *tableau = convertirCSVEnTableau(symbole->valeur, &taille);
+
+    printf("Tableau (taille %d) : ", taille);
+    for (int i = 0; i < taille; i++) {
+        printf("%d ", tableau[i]);
+    }
+    printf("\n");
+    free(tableau); 
+}
+void initialiserTableau(Symbole *symbole, int taille) {
+    // Allouer assez de mémoire pour la chaîne CSV
+    char *resultat = malloc(taille * 2); // Chaque chiffre + virgule
+    if (!resultat) return;
+
+    resultat[0] = '\0'; // Chaîne vide pour commencer
+    for (int i = 0; i < taille; i++) {
+        strcat(resultat, "0"); // Ajouter un zéro
+        if (i < taille - 1) strcat(resultat, ","); // Ajouter une virgule
+    }
+
+    symbole->valeur = resultat;
+    symbole->taille = taille;
+}
+
+// Fonction pour modifier une valeur à une position spécifique
+void modifierCase(Symbole *symbole, int index, int nouvelleValeur) {
+    if (index < 0 || index >= symbole->taille) {
+        printf("Index invalide : %d\n", index);
+        return;
+    }
+
+    // Créer une copie pour manipulation
+    char *csvCopy = strdup(symbole->valeur);
+    char *token = strtok(csvCopy, ",");
+    char nouvelleCSV[1024] = "";
+    int position = 0;
+
+    while (token != NULL) {
+        if (position == index) {
+            char buffer[16];
+            snprintf(buffer, sizeof(buffer), "%d", nouvelleValeur); // Nouvelle valeur
+            strcat(nouvelleCSV, buffer);
+        } else {
+            strcat(nouvelleCSV, token);
+        }
+
+        token = strtok(NULL, ",");
+        if (token != NULL) strcat(nouvelleCSV, ",");
+        position++;
+    }
+
+    free(csvCopy); // Libérer la copie temporaire
+
+    // Mettre à jour la chaîne CSV
+    free(symbole->valeur);
+    symbole->valeur = strdup(nouvelleCSV);
+}
