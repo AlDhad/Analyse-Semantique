@@ -594,12 +594,12 @@ char *yytext;
 #include <ctype.h>
 #include "parser.tab.h"
 extern YYSTYPE yylval;
-
-extern int line;
-extern int linecol;
 extern char *yyin_filename;
-extern int sauv;
-extern int sauvline;
+int lignenum = 1 ;
+
+int column = 0 ; 
+int current_column = 0; 
+int yyerror(const char *s);
 #line 604 "lex.yy.c"
 #line 605 "lex.yy.c"
 
@@ -882,7 +882,7 @@ YY_RULE_SETUP
 #line 24 "analyseur.l"
 { 
      printf("here is the begining of the program\n");
-     linecol=linecol+5;
+     column=column+5;
      return DEBUT;
 }
 	YY_BREAK
@@ -891,7 +891,7 @@ YY_RULE_SETUP
 #line 29 "analyseur.l"
 {
      printf("mot de fin\n");
-     linecol=linecol+5; 
+     column=column+5; 
      return FIN; 
 }
 	YY_BREAK
@@ -900,7 +900,7 @@ YY_RULE_SETUP
 #line 34 "analyseur.l"
 { 
      yylval.type = 1; 
-     linecol=linecol+4;
+     column=column+4;
      return ENTIER; 
 }
 	YY_BREAK
@@ -909,14 +909,14 @@ YY_RULE_SETUP
 #line 40 "analyseur.l"
 {
     yylval.type = 2; 
-    linecol=linecol+4; 
+    column=column+4; 
     return FLOTTANT; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 44 "analyseur.l"
 { 
-     linecol=linecol+5;
+     column=column+5;
      yylval.type = 5;
      return BOOLEAN; }
 	YY_BREAK
@@ -924,7 +924,7 @@ case 6:
 YY_RULE_SETUP
 #line 48 "analyseur.l"
 { 
-    linecol=linecol+2;
+    column=column+2;
     yylval.type = 4;
     strcpy(yylval.str,yytext); 
     return STRING; }
@@ -933,7 +933,7 @@ case 7:
 YY_RULE_SETUP
 #line 53 "analyseur.l"
 { 
-    linecol=linecol+3;
+    column=column+3;
     yylval.type = 3;  
     return CHAR; }
 	YY_BREAK
@@ -941,7 +941,7 @@ case 8:
 YY_RULE_SETUP
 #line 57 "analyseur.l"
 { 
-     linecol=linecol+4;
+     column=column+4;
      yylval.type = 0; 
      return CONST; }
 	YY_BREAK
@@ -949,56 +949,56 @@ case 9:
 YY_RULE_SETUP
 #line 61 "analyseur.l"
 { 
-     linecol=linecol+3;
+     column=column+3;
      return IF; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 64 "analyseur.l"
 { 
-     linecol=linecol+4;
+     column=column+4;
      return ELSE; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
 #line 67 "analyseur.l"
 { 
-     linecol=linecol+8;
+     column=column+8;
      return ELIF; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 70 "analyseur.l"
 { 
-     linecol=linecol+5;
+     column=column+5;
      return WHILE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 73 "analyseur.l"
 { 
-     linecol=linecol+3;
+     column=column+3;
      return FOR; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 76 "analyseur.l"
 { 
-     linecol=linecol+4;
+     column=column+4;
      return PRINT; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 79 "analyseur.l"
 { 
-     linecol=linecol+5;
+     column=column+5;
      return INPUT; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 82 "analyseur.l"
 { 
-    linecol=linecol+4;
+    column=column+4;
     yylval.type = 6;
     return TABLE; }
 	YY_BREAK
@@ -1006,7 +1006,7 @@ case 17:
 YY_RULE_SETUP
 #line 86 "analyseur.l"
 {
-     linecol=linecol+3;
+     column=column+3;
      yylval.type = 7;
      return ENREGISTREMENT; }
 	YY_BREAK
@@ -1014,14 +1014,14 @@ case 18:
 YY_RULE_SETUP
 #line 90 "analyseur.l"
 { 
-    linecol=linecol+4;
+    column=column+4;
     return FONCTION; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 93 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
      yylval.boolean = true;
      return TRUE; }
 	YY_BREAK
@@ -1029,7 +1029,7 @@ case 20:
 YY_RULE_SETUP
 #line 97 "analyseur.l"
 {
-     linecol=linecol+3;
+     column=column+3;
      yylval.boolean = false; 
      return FALSE; }
 	YY_BREAK
@@ -1037,35 +1037,35 @@ case 21:
 YY_RULE_SETUP
 #line 101 "analyseur.l"
 {
-    linecol=linecol+6;
+    column=column+6;
     return VIDE; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 104 "analyseur.l"
 { 
-     linecol=linecol+4;
+     column=column+4;
      return RETURN; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 107 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
      return FROM; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 110 "analyseur.l"
 { 
-    linecol=linecol+3;
+    column=column+3;
     return TO; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 113 "analyseur.l"
 { 
-     linecol=linecol+1;
+     column=column+1;
      return VIRGULE; }
 	YY_BREAK
 case 26:
@@ -1073,7 +1073,7 @@ YY_RULE_SETUP
 #line 116 "analyseur.l"
 {
      printf("semi colon \n");
-     linecol=linecol+1; 
+     column=column+1; 
      return SEMICOLON; } 
 	YY_BREAK
 case 27:
@@ -1081,7 +1081,7 @@ case 27:
 YY_RULE_SETUP
 #line 121 "analyseur.l"
 { 
-     linecol=linecol+yyleng;
+     column=column+yyleng;
      strcpy(yylval.str,yytext);
      return CHAINE; }
 	YY_BREAK
@@ -1090,7 +1090,7 @@ case 28:
 YY_RULE_SETUP
 #line 125 "analyseur.l"
 {
-     linecol=linecol+yyleng;
+     column=column+yyleng;
      strcpy(yylval.str,yytext);
      return CHAINE; }
 	YY_BREAK
@@ -1098,7 +1098,7 @@ case 29:
 YY_RULE_SETUP
 #line 129 "analyseur.l"
 { 
-    linecol=linecol+yyleng;
+    column=column+yyleng;
     yylval.intv = atoi(yytext);
     return INT; }
 	YY_BREAK
@@ -1106,7 +1106,7 @@ case 30:
 YY_RULE_SETUP
 #line 133 "analyseur.l"
 {
-      linecol=linecol+yyleng; 
+      column=column+yyleng; 
       yylval.flt = atof(yytext);
       return FLOAT; }
 	YY_BREAK
@@ -1115,14 +1115,14 @@ YY_RULE_SETUP
 #line 137 "analyseur.l"
 {
      strcpy(yylval.str,yytext);
-     linecol=linecol+yyleng;
+     column=column+yyleng;
      return ID; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 141 "analyseur.l"
 { 
-     linecol=1;
+     column=1;
      return COMMENT; }
 	YY_BREAK
 case 33:
@@ -1130,226 +1130,231 @@ case 33:
 YY_RULE_SETUP
 #line 144 "analyseur.l"
 {
-      linecol=1; 
+     column=column+3; // ajoute 3 pour les caractères ' """ '
+     int len = strlen(yytext)-3;
+     for (int i = 0; i < len; i++) {
+        if (yytext[i] == '\n') {
+            column = 1; // Réinitialise la colonne pour chaque nouvelle ligne
+            lignenum++;
+        } else {
+            column++;
+        }
+     } 
       return COMMENT_PLUS;  }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 147 "analyseur.l"
+#line 156 "analyseur.l"
 {
-    linecol=linecol+1;
+    column=column+1;
     return POINTEUR;
 } 
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 151 "analyseur.l"
+#line 160 "analyseur.l"
 {
     printf("debut de tableau \n");
-    linecol=linecol+1;
+    column=column+1;
     return DEB_TABLEAU;
 }    
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 157 "analyseur.l"
+#line 166 "analyseur.l"
 {
-    linecol=linecol+1;
+    column=column+1;
     return FIN_TABLEAU;
 }  
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 161 "analyseur.l"
+#line 170 "analyseur.l"
 {
-     linecol=linecol+1;
+     column=column+1;
      return PLUS; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 164 "analyseur.l"
+#line 173 "analyseur.l"
 {
-    linecol=linecol+1;
+    column=column+1;
      return MOINS; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 167 "analyseur.l"
+#line 176 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return MULT; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 170 "analyseur.l"
+#line 179 "analyseur.l"
 { 
-     linecol=linecol+1;
+     column=column+1;
      return DIV; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 173 "analyseur.l"
+#line 182 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return MOD; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 176 "analyseur.l"
+#line 185 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return PUISS; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 179 "analyseur.l"
+#line 188 "analyseur.l"
 { 
-      printf("operateur increment \n");
-      linecol=linecol+2;
+      column=column+2;
       return INCREM; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 183 "analyseur.l"
+#line 191 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
      return DECREM; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 186 "analyseur.l"
+#line 194 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
      return EQUAL; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 189 "analyseur.l"
+#line 197 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
       return NOT_EQUAL; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 192 "analyseur.l"
+#line 200 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return NOT; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 195 "analyseur.l"
+#line 203 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return ASSIGN; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 198 "analyseur.l"
+#line 206 "analyseur.l"
 { 
-    linecol=linecol+2;
+    column=column+2;
      return INF_EGAL; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 201 "analyseur.l"
+#line 209 "analyseur.l"
 {
-     linecol=linecol+2;
+     column=column+2;
      return SUPP_EGAL; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 204 "analyseur.l"
+#line 212 "analyseur.l"
 {
-     linecol=linecol+1;
+     column=column+1;
       return INF; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 207 "analyseur.l"
+#line 215 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return SUP; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 210 "analyseur.l"
+#line 218 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
      return OR; } 
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 213 "analyseur.l"
+#line 221 "analyseur.l"
 { 
-     linecol=linecol+2;
+     column=column+2;
      return AND; } 
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 216 "analyseur.l"
+#line 224 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return PAR_OUV; } 
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 219 "analyseur.l"
+#line 227 "analyseur.l"
 { 
-      linecol=linecol+1;
+      column=column+1;
       return PAR_FERM; } 
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 222 "analyseur.l"
+#line 230 "analyseur.l"
 { 
-      printf("accolade de debut \n");
-      linecol=linecol+1;
+      column=column+1;
       return DEB_CORPS; } 
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 226 "analyseur.l"
+#line 233 "analyseur.l"
 { 
-      printf("accolade de fin \n");
-      linecol=linecol+1;
+      column=column+1;
       return FIN_CORPS; } 
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 231 "analyseur.l"
+#line 237 "analyseur.l"
 {
      // Ignorer les espaces, tabulations 
-    linecol=linecol+yyleng;
+    column=column+yyleng;
 
 } 
 	YY_BREAK
 case 60:
 /* rule 60 can match eol */
 YY_RULE_SETUP
-#line 237 "analyseur.l"
+#line 243 "analyseur.l"
 {
     // Ignorer retours à la ligne
-     sauvline=line;
-     line++;
-     sauv = linecol;
-     linecol=0;
+     lignenum++;
+     column=0;
 }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 244 "analyseur.l"
+#line 248 "analyseur.l"
 {
-    fprintf(stderr, "File \"%s\", line %d, character %d: Unrecognized symbol '%s'\n", yyin_filename, line, linecol, yytext);
-    exit(EXIT_FAILURE);
+    current_column = column+1;
+    fprintf(stderr, "File \"%s\", line %d, character %d: Unrecognized symbol '%s'\n", yyin_filename, lignenum, current_column, yytext);
+    exit(1);
 }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 248 "analyseur.l"
+#line 253 "analyseur.l"
 ECHO;
 	YY_BREAK
-#line 1353 "lex.yy.c"
+#line 1358 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2354,7 +2359,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 248 "analyseur.l"
+#line 253 "analyseur.l"
 
 
 

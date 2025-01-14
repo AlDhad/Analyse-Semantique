@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 166 "parser.y"
+#line 159 "parser.y"
 
     #include "symbolTable.h"  // Include it again here to make sure types are available for the union
 
@@ -129,7 +129,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 170 "parser.y"
+#line 163 "parser.y"
 
     int type;
     char str[255];

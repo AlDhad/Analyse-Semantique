@@ -38,17 +38,14 @@
     int qC = 0;
     
 
-    extern int colnum ;
+    extern int column;
     extern int lignenum ;
 
     extern FILE *yyin;
     int yylex();
     void yyerror(const char *s);
-    int line = 1;        // Numéro de ligne courant
-    int linecol = 0;         // Numéro de colonne courant
+    void yyerrorSemantic(char *s);
     char *yyin_filename = NULL;
-    int sauv = 0;
-    int sauvline = 1;
 
     #define TYPE_ENTIER "ENTIER"
     #define TYPE_FLOTTANT "FLOTTANT"
@@ -111,10 +108,6 @@ TypeInfo currentType;
     char currentFunction[256]; 
     bool inLoop = false; 
     int loopNestingLevel = 0;
-void semanticError(const char* message, int line) { 
-    fprintf(stderr, "Semantic error at line %d: %s\n", line, message); 
-    exit(1);
-}
 ParametresList* creerParametresList() {
     ParametresList* list = (ParametresList*)malloc(sizeof(ParametresList));
     list->head = NULL;
@@ -297,7 +290,7 @@ tableau :
     TABLE type ID DEB_TABLEAU INT FIN_TABLEAU {
         Symbole* found;
         if (rechercherSymbole(TS, $3, &found)) {
-            semanticError("Tableau Deja Déclaré", line);
+            yyerrorSemantic("\nTableau Deja Déclaré");
         }
         
         // Convert the type token to string
@@ -317,7 +310,7 @@ tableau :
             $3,         // name
             typeStr,    // type
             "",         // initial value
-            line,       // line number
+            lignenum,       // lignenum number
             $5         // memory address
         );
         insererSymbole(TS, sym);
@@ -371,12 +364,13 @@ variable:
         Symbole* found;
         rechercherSymbole(TS, $1, &found);
         if (found == NULL) {
-            semanticError("Tableau non declaree", line);
+             yyerrorSemantic("\nTableau non declaree");
+            yyerrorSemantic("Tableau non declaree");
         }
         else{
             if ($3 > found->taille) {
                 
-                semanticError("Index hors limites", line);
+                yyerrorSemantic("Index hors limites");
             }
             else{
                 $$.nom = $1;
@@ -395,12 +389,12 @@ variable:
         Symbole* found;
         rechercherSymbole(TS, $1, &found);
         if (found == NULL) {
-            semanticError("Structure non declaree", line);
+            yyerrorSemantic("Structure non declaree");
         }
         else{
             rechercherSymbole(TS, $3, &found);
             if (found == NULL) {
-                semanticError("Variable non declaree", line);
+                yyerrorSemantic("Variable non declaree");
             }
             else{
                 $$.nom = $3;
@@ -450,10 +444,10 @@ variable:
                 $$.valeur = strdup("0");
                     
                 } else {
-                    semanticError("Variable non declaree", line);
+                    yyerrorSemantic("Variable non declaree");
                 }
             } else {
-            semanticError("Variable non declaree", line);
+            yyerrorSemantic("Variable non declaree");
         }
     }
             }
@@ -471,7 +465,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -492,7 +486,7 @@ expression:
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for addition", line);
+            yyerrorSemantic("Invalid types for addition");
         }
 
         // Generate quadruplet
@@ -517,7 +511,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -538,7 +532,7 @@ expression:
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for subtraction", line);
+            yyerrorSemantic("Invalid types for subtraction");
         }
 
         // Generate quadruplet
@@ -563,7 +557,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -584,7 +578,7 @@ expression:
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for multiplication", line);
+            yyerrorSemantic("Invalid types for multiplication");
         }
 
         // Generate quadruplet
@@ -609,7 +603,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -619,27 +613,27 @@ expression:
         // Perform division based on types
         if ($1.type == ENTIER && $3.type == ENTIER) {
             if (atoi(val2) == 0) {
-                semanticError("Division by zero", line);
+                yyerrorSemantic("Division by zero");
             }
             int result = atoi(val1) / atoi(val2);
             sprintf($$.valeur, "%d", result);
             $$.type = ENTIER;
         } else if ($1.type == FLOTTANT || $3.type == FLOTTANT) {
             if (atof(val2) == 0.0) {
-                semanticError("Division by zero", line);
+                yyerrorSemantic("Division by zero");
             }
             float result = atof(val1) / atof(val2);
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else if (($1.type == FLOTTANT && $3.type == ENTIER) || ($1.type == ENTIER && $3.type == FLOTTANT)) {
             if (atof(val2) == 0.0) {
-                semanticError("Division by zero", line);
+                yyerrorSemantic("Division by zero");
             }
             float result = atof(val1) / atof(val2);
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for division", line);
+            yyerrorSemantic("Invalid types for division");
         }
 
         // Generate quadruplet
@@ -664,7 +658,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -674,13 +668,13 @@ expression:
         // Perform modulo based on types
         if ($1.type == ENTIER && $3.type == ENTIER) {
             if (atoi(val2) == 0) {
-                semanticError("Modulo by zero", line);
+                yyerrorSemantic("Modulo by zero");
             }
             int result = atoi(val1) % atoi(val2);
             sprintf($$.valeur, "%d", result);
             $$.type = ENTIER;
         } else {
-            semanticError("Invalid types for modulo", line);
+            yyerrorSemantic("Invalid types for modulo");
         }
 
         // Generate quadruplet
@@ -705,7 +699,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -722,7 +716,7 @@ expression:
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for power", line);
+            yyerrorSemantic("Invalid types for power");
         }
 
         // Generate quadruplet
@@ -747,7 +741,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get value for operand
@@ -759,7 +753,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid type for NOT operation", line);
+            yyerrorSemantic("Invalid type for NOT operation");
         }
 
         // Generate quadruplet
@@ -790,7 +784,7 @@ expression:
     $$.nom = NULL;
     $$.valeur = malloc(255);
     if ($$.valeur == NULL) {
-        semanticError("Memory allocation failed", line);
+        yyerrorSemantic("Memory allocation failed");
         YYABORT;
     }
 
@@ -819,7 +813,7 @@ expression:
         $$.type = BOOLEAN;
     } else {
         free($$.valeur);
-        semanticError("Invalid types for comparison", line);
+        yyerrorSemantic("Invalid types for comparison");
         YYABORT;
     }
     // Generate quadruplet
@@ -832,7 +826,7 @@ expression:
     if (quad == NULL) {
         free($$.valeur);
         free($$.nom);
-        semanticError("Failed to create quadruplet", line);
+        yyerrorSemantic("Failed to create quadruplet");
         YYABORT;
     }
 
@@ -853,7 +847,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -879,7 +873,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -907,7 +901,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -933,7 +927,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -960,7 +954,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -986,7 +980,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -1014,7 +1008,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -1045,7 +1039,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -1073,7 +1067,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -1103,7 +1097,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -1130,7 +1124,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -1144,7 +1138,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -1172,7 +1166,7 @@ expression:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get values for operands
@@ -1186,7 +1180,7 @@ expression:
             sprintf($$.valeur, "%d", result);
             $$.type = BOOLEAN;
         } else {
-            semanticError("Invalid types for comparaison", line);
+            yyerrorSemantic("Invalid types for comparaison");
         } 
 
         // Generate quadruplet
@@ -1215,7 +1209,7 @@ incrementation:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get value for operand
@@ -1231,7 +1225,7 @@ incrementation:
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for addition", line);
+            yyerrorSemantic("Invalid types for addition");
         }
 
         // Generate quadruplet
@@ -1256,7 +1250,7 @@ incrementation:
         $$.nom = NULL;
         $$.valeur = malloc(255);
         if ($$.valeur == NULL) {
-            semanticError("Memory allocation failed", line);
+            yyerrorSemantic("Memory allocation failed");
         }
 
         // Get value for operand
@@ -1272,7 +1266,7 @@ incrementation:
             sprintf($$.valeur, "%f", result);
             $$.type = FLOTTANT;
         } else {
-            semanticError("Invalid types for subtraction", line);
+            yyerrorSemantic("Invalid types for subtraction");
         }
 
         // Generate quadruplet
@@ -1299,7 +1293,7 @@ declaration:
     type ID  {
         Symbole* found;
         if (rechercherSymbole(TS, $2, &found)) {
-            semanticError("Variable already declared", line);
+            yyerrorSemantic("Variable already declared");
         }
         
         // Convert the type token to string
@@ -1318,7 +1312,7 @@ declaration:
             $2,         // name
             typeStr,    // type
             "",         // initial value
-            line,       // line number
+            lignenum,       // lignenum number
             0          // memory address
         );
         
@@ -1331,7 +1325,7 @@ declaration:
     | type ID ASSIGN expression SEMICOLON {
         Symbole* found;
         if (rechercherSymbole(TS, $2, &found)) {
-            semanticError("Variable already declared", line);
+            yyerrorSemantic("Variable already declared");
         }
         
         // Convert the type token to string
@@ -1347,7 +1341,7 @@ declaration:
         
         // Check if the expression is valid for the type
         if (!($4.valeur, typeStr)) {
-            semanticError("Invalid literal for type", line);
+            yyerrorSemantic("Invalid literal for type");
         }
         
         Symbole* sym = creerSymbole(
@@ -1355,7 +1349,29 @@ declaration:
             $2,         // name
             typeStr,    // type
             $4.valeur,  // initial value
-            line,       // line number
+            lignenum,       // lignenum number
+            0          // memory address
+        );
+        insererSymbole(TS, sym);
+        afficherTableSymbole(TS); // afficher TS pour confirmer
+        afficherTQ(TQ);
+    }
+    | CONST ID ASSIGN INT SEMICOLON {
+        Symbole* found;
+        if (rechercherSymbole(TS, $2, &found)) {
+            yyerrorSemantic("Constant already declared");
+        }
+        
+        // Convert the type token to string
+        char* typeStr = TYPE_ENTIER;
+        char buffer[256];
+        sprintf(buffer, "%d", $4);
+        Symbole* sym = creerSymbole(
+            CONSTANTE,    // category
+            $2,         // name
+            typeStr,    // type
+            buffer,         // initial value
+            lignenum,       // lignenum number
             0          // memory address
         );
         insererSymbole(TS, sym);
@@ -1370,8 +1386,6 @@ functions:
     ;
 fonction:
     declarationfonction PAR_OUV parametres PAR_FERM {
-        printf("je suis dans fonction1\n");
-        printf("Function parameters:\n");
         if ($3->head != NULL) {
             ParametreNode* current = $3->head;
             printf("hilllo");
@@ -1397,7 +1411,7 @@ fonction:
         
         //on check si c'est une fonction (a un type != void ) et ne retourne pas de valeur
         if($1.type[0] != 'V' && !itReturn){
-            semanticError("La fonction ne retourne pas de valeur", line);
+            yyerrorSemantic("La fonction ne retourne pas de valeur");
         }
         printf("fonction correcte syntaxiquement\n"); afficherTableSymbole(TS);   
         saveFunctionDec=NULL;
@@ -1407,7 +1421,7 @@ declarationfonction :
     type FONCTION ID {        
         Symbole* found;
         if (rechercherSymbole(TS, $3, &found)) {
-            semanticError("Function already declared", line);
+            yyerrorSemantic("Function already declared");
         }
         
         // Convert the type token to string
@@ -1426,7 +1440,7 @@ declarationfonction :
             $3,         // name
             typeStr,    // type
             "",         // initial value
-            line,       // line number
+            lignenum,       // ligne number
             0          // memory address
         );
         $$.nom = strdup($3);
@@ -1440,7 +1454,7 @@ declarationfonction :
     | FONCTION ID{
         Symbole* found;
         if (rechercherSymbole(TS, $2, &found)) {
-            semanticError("Function already declared", line);
+            yyerrorSemantic("Function already declared");
         }
         //création du symbole de la fonction
         Symbole* sym = creerSymbole(
@@ -1448,7 +1462,7 @@ declarationfonction :
             $2,         // name
             "VOID",    // type
             "",         // initial value
-            line,       // line number
+            lignenum,       // lignenum number
             0          // memory address
         );
         $$.nom = strdup($2);
@@ -1469,7 +1483,7 @@ parametres:
         $$ = $1;  
         // Add the new parameter to the list
         if (!ajouterParametreUnion($$, $3.nom, $3.type)) {
-            semanticError("Parametre deja declare", line);
+            yyerrorSemantic("Parametre deja declare");
         }
     }
     | parametre {
@@ -1477,7 +1491,7 @@ parametres:
         $$ = creerParametresList();
         // Add the parameter to the new list
         if (!ajouterParametreUnion($$, $1.nom, $1.type)) {
-            semanticError("Parametre deja declare", line);
+            yyerrorSemantic("Parametre deja declare");
         }
     }
     ;
@@ -1540,7 +1554,7 @@ retourner:
         if (rechercherSymbole(TS, saveFunctionDec, &found)) {
             printf("je suis dans retourner\n");
             if(found->type[0] == 'V'){
-                semanticError("La fonction ne retourne pas de valeur", line);
+                yyerrorSemantic("La fonction ne retourne pas de valeur");
             }
             char* exprType = NULL;
                 switch($2.type) {
@@ -1552,11 +1566,11 @@ retourner:
                     default: exprType = TYPE_ENTIER;
                 }
             if (!areTypesCompatible(found->type, exprType)) {
-                semanticError("Type de retour incompatible avec la fonction", line);
+                yyerrorSemantic("Type de retour incompatible avec la fonction");
             }
             itReturn = true;
         } else {
-          semanticError("Fonction non declaree", line);
+          yyerrorSemantic("Fonction non declaree");
         }
         }
     ;
@@ -1589,10 +1603,10 @@ assignment:
                 printf("Type de l'expression: %s\n", exprType);
                 printf("Type de la variable: %s\n", found->type);
                 if (!areTypesCompatible(found->type, exprType)) {
-                    semanticError("Type incompatible dans l'affectation.", line);
+                    yyerrorSemantic("Type incompatible dans l'affectation.");
                 }
             } else {
-                semanticError("Identifier is not a variable", line);
+                yyerrorSemantic("Identifier is not a variable");
             }
         } else {
             //on check dabord si il ya une fonction en cours de traitement 
@@ -1613,13 +1627,13 @@ assignment:
                         default: exprType = TYPE_ENTIER;
                     }
                     if (!areTypesCompatible(exprType, found->type)) {
-                        semanticError("Type incompatible dans l'affectation.", line);
+                        yyerrorSemantic("Type incompatible dans l'affectation.");
                     }
                 } else {
-                    semanticError("Variable non declaree", line);
+                    yyerrorSemantic("Variable non declaree");
                 }
             } else {
-            semanticError("Variable non declaree", line);
+            yyerrorSemantic("Variable non declaree");
         }
     } 
     }
@@ -1655,10 +1669,10 @@ assignment:
                 printf("Type de l'expression: %s\n", exprType);
                 printf("Type de la variable: %s\n", found->type);
                 if (!areTypesCompatible(found->type, exprType)) {
-                    semanticError("Type incompatible dans l'affectation.", line);
+                    yyerrorSemantic("Type incompatible dans l'affectation.");
                 }
             } else {
-                semanticError("Identifier is not a variable", line);
+                yyerrorSemantic("Identifier is not a variable");
             }
         } else {
             //on check dabord si il ya une fonction en cours de traitement 
@@ -1679,13 +1693,13 @@ assignment:
                         default: exprType = TYPE_ENTIER;
                     }
                     if (!areTypesCompatible(exprType, found->type)) {
-                        semanticError("Type incompatible dans l'affectation.", line);
+                        yyerrorSemantic("Type incompatible dans l'affectation.");
                     }
                 } else {
-                    semanticError("Variable non declaree", line);
+                    yyerrorSemantic("Variable non declaree");
                 }
             } else {
-            semanticError("Variable non declaree", line);
+            yyerrorSemantic("Variable non declaree");
         }
     } }SEMICOLON
     | ID ASSIGN call{
@@ -1702,7 +1716,7 @@ assignment:
             default: typeStr = TYPE_ENTIER; // default case
         }
         if (!areTypesCompatible(found->type, typeStr)) {
-            semanticError("Type incompatible dans l'affectation.", line);
+            yyerrorSemantic("Type incompatible dans l'affectation.");
         }
         qC++;        
         // Create a buffer for the value
@@ -1713,6 +1727,7 @@ assignment:
         // Create quadruplet
         quad = creer_Q(":=", $1, " ", buffer, qC);
         inserer_TQ(TQ, quad);
+        afficherQ(quad);
         afficherTQ(TQ);}
         else {
              //on check dabord si il ya une fonction en cours de traitement 
@@ -1733,46 +1748,19 @@ assignment:
                         default: exprType = TYPE_ENTIER;
                     }
                     if (!areTypesCompatible(exprType, found->type)) {
-                        semanticError("Type incompatible dans l'affectation.", line);
+                        yyerrorSemantic("Type incompatible dans l'affectation.");
                     }
                 } else {
-                    semanticError("Variable non declaree", line);
+                    yyerrorSemantic("Variable non declaree");
                 }
             } else {
-            semanticError("Variable non declaree", line);
+            yyerrorSemantic("Variable non declaree");
         }
         }
     } SEMICOLON
     ;
 
-condition:
-    ifstatement corps elsebloc  
-        {
-        while (!Pempty(P)) {
-            quad = pop(P);
-            updateLabel(quad, qC);
-        }
-        qC++;
-        quad = creer_Q("finIf","", " ", "", qC);
-        inserer_TQ(TQ, quad);
-        
-    }
-    ;
-ifstatement:
-    IF PAR_OUV expression PAR_FERM{
-        //vérifier si le resultat de l'expression est un boolean
-        if($3.type != BOOLEAN){
-            semanticError("L'expression doit être un boolean", line);
-        }else{
-            qC++;
-            //branchement en cas de faux
-            quad = creer_Q("BZ","temp", " ", $3.valeur, qC);
-            inserer_TQ(TQ, quad);
-            //sauvegarder qC pour la mise a jour de l'adresse de branchement dans la pile des adresses
-            push(P, quad);
-            
-        }
-    }
+
 
 
 loop:
@@ -1784,10 +1772,8 @@ while_partie_une:
     WHILE PAR_OUV {
 
         printf("I'm inside while\n");
-
-        qC++;
         
-        sauvDebut = qC;
+        sauvDebut = qC+1;
     };
 
 while_partie_deux:
@@ -1796,8 +1782,9 @@ while_partie_deux:
         printf("I'm inside while\n");
 
         if($1.type != BOOLEAN) {
-            semanticError("Condition de boucle invalide", line);
+            yyerrorSemantic("Condition de boucle invalide");
         }
+        qC++;
         // Branchement vers fin si condition n'est pas vrai
         quad = creer_Q("BZ", "fin", " ", $1.valeur, qC);
         inserer_TQ(TQ, quad);
@@ -1810,15 +1797,15 @@ while_partie_trois:
 
         printf("I'm inside while\n");
 
-        qC++;
-        quad = pop(P); 
-        updateLabel(quad, qC+1);
         // Branchement inconditionnel vers Debut
         
         char etiq[255];
         sprintf(etiq, "%d", sauvDebut);
+        qC++;
         quad = creer_Q("BR", etiq, "", "", qC);
         inserer_TQ(TQ, quad);
+        quad = pop(P); 
+        updateLabel(quad, qC+1);
         afficherTQ(TQ);
 
     };
@@ -1827,9 +1814,7 @@ for_partie_une:
     FOR PAR_OUV {
 
         printf("I'm inside for\n");
-       
-        qC++;
-        sauvDebut = qC;
+        sauvDebut = qC+1;
     };
 
 for_partie_deux:
@@ -1847,7 +1832,8 @@ for_partie_deux:
         char str5[20], str3[20];
         sprintf(str5, "%d", $5);
         sprintf(str3, "%d", $3);
-        quad = creer_Q("-", str5, str3, temp, qC);
+        qC++;
+        quad = creer_Q("cond", str5, str3, temp, qC);
 
         inserer_TQ(TQ, quad);
         afficherTQ(TQ);
@@ -1865,15 +1851,14 @@ for_partie_trois:
 
         printf("Entrée dans for_partie_trois\n");
 
-        qC++;
-        quad = pop(P); 
-        updateLabel(quad, qC+1);
-
         // Branchement inconditionnel vers Debut
         char etiq[255];
         sprintf(etiq, "%d", sauvDebut);
+        qC++;
         quad = creer_Q("BR", etiq, "", "", qC);
         inserer_TQ(TQ, quad);
+        quad = pop(P); 
+        updateLabel(quad, qC+1);
         afficherTQ(TQ);
     };
 
@@ -1881,19 +1866,51 @@ corps :
     DEB_CORPS declarations instructions FIN_CORPS
     | instruction
     ;
+condition:
+    ifstatement corps elsebloc  
+        {
+        // Mise a jour de etiquette next pour sauter else bloc
+        while (!Pempty(P)) {
+            quad = pop(P);
+            updateLabel(quad, qC);
+        }
+        quad = creer_Q("finIf","", " ", "", qC);
+        inserer_TQ(TQ, quad);
+        afficherQ(quad);
+        afficherTQ(TQ);
+        
+    }
+    ;
+ifstatement:
+    IF PAR_OUV expression PAR_FERM{
+        //vérifier si le resultat de l'expression est un boolean
+        if($3.type != BOOLEAN){
+            yyerrorSemantic("L'expression doit être un boolean");
+        }else{
+            qC++;
+            //branchement en cas de faux
+            quad = creer_Q("BZ","temp", " ", $3.valeur, qC);
+            inserer_TQ(TQ, quad);
+            //sauvegarder qC pour la mise a jour de l'adresse de branchement dans la pile des adresses
+            push(P, quad);
+            afficherQ(quad);
+            afficherTQ(TQ);
+            
+        }
+    }
 elsebloc:
     /* empty */ {
-        //maj de l'adresse de branchement dans la pile des adresses
+        //maj de l'adresse de branchement etiquette else
         qC++;
         quad = pop(P);
-        updateLabel(quad, qC);
-        printf("\nelsebloc correcte syntaxiquement qc = %d\n", qC);
+        updateLabel(quad, qC+1);
     }
     | elsestatement corps {
         qC++;
-        //maj de l'adresse de branchement dans la pile des adresses
+        //maj de l'adresse de branchement etiquette else 
         quad = pop(P);
-        updateLabel(quad, qC);
+        updateLabel(quad, qC+1);
+        afficherTQ(TQ);
         //maj de l'adresse de branchement dans la pile des adresses
        
     }
@@ -1902,21 +1919,22 @@ elsebloc:
     ;
 elsestatement :
     ELSE {
-        //maj de l'adresse de branchement dans la pile des adresses
-        qC++;
+        //maj de l'adresse de branchement dans la pile des adresses 
+        //qC++;
         quad = pop(P);
         updateLabel(quad, qC+1);
         //branchement vers la fin
-        
+        qC++;
         quad = creer_Q("BR","temp", " ", "", qC);
         inserer_TQ(TQ, quad);
+        afficherTQ(TQ);
         push(P, quad);
         
     }
 elifstatement:
     elifkey PAR_OUV expression PAR_FERM {
         if($3.type != BOOLEAN){
-            semanticError("L'expression doit être un boolean", line);
+            yyerrorSemantic("L'expression doit être un boolean");
         }else{
             qC++;
             //branchement en cas de faux
@@ -1924,20 +1942,22 @@ elifstatement:
             inserer_TQ(TQ, quad);
             //sauvegarder qC pour la mise a jour de l'adresse de branchement dans la pile des adresses
             push(P, quad);
+            afficherTQ(TQ);
             
         }
     }
 elifkey:
     ELIF{
         //maj de l'adresse de branchement dans la pile des adresses
-        qC++;
+        //qC++;
         quad = pop(P);
         updateLabel(quad, qC+1);
         //branchement vers la fin
-        
+        qC++;
         quad = creer_Q("BR","temp", " ", "", qC);
         inserer_TQ(TQ, quad);
         push(P, quad);
+        afficherTQ(TQ);
     }
     ;
 
@@ -1972,7 +1992,7 @@ call:
                 $$.valeur = strdup(found->valeur);
                 //on vérifie le nombre de parametres est le meme 
                 if (found->infoFonction->nbParametres != currentParametresList->count) {
-                    semanticError("Nombre de parametres incorrect", line);
+                    yyerrorSemantic("Nombre de parametres incorrect");
                 }else
                 {
                     //on check pour chaque parametre la compatibilité de type 
@@ -1980,7 +2000,7 @@ call:
                     Parametre* currentFonction = found->infoFonction->parametres;
                     while (current) {
                         if (!areTypesCompatible(current->parametre.type, currentFonction->type)) {
-                            semanticError("Type incompatible dans l'appel de fonction", line);
+                            yyerrorSemantic("Type incompatible dans l'appel de fonction");
                         }
                         current = current->next;
                         currentFonction = currentFonction->suivant;
@@ -1994,10 +2014,10 @@ call:
                 }
             }
             else{
-                semanticError("Identifier is not a function", line);
+                yyerrorSemantic("Identifier is not a function");
             }
         } else {
-            semanticError("Function not declared", line);
+            yyerrorSemantic("Function not declared");
         }
         
     }
@@ -2044,14 +2064,15 @@ parametreCall:
 %%
 
 void yyerror(const char *s) {
-    if (sauvline == line){
-        line = line -1 ;
-    }
-    fprintf(stderr, "File \"%s\", line %d, character %d: %s\n", 
-            yyin_filename, line,sauv - linecol, s);
+    fprintf(stderr, "File \"%s\" ,ligne %d, colonne %d: %s\n  ", 
+            yyin_filename, lignenum,column, s);
     exit(EXIT_FAILURE);
 }
 
+void yyerrorSemantic(char *s){
+    printf("\nErreur semantique : %s , ligne %d , colonne %d",s,lignenum,column);
+    exit(EXIT_FAILURE);
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
