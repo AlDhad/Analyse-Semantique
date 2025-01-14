@@ -313,6 +313,7 @@ tableau :
             lignenum,       // lignenum number
             $5         // memory address
         );
+        initialiserTableau(sym,$5);
         insererSymbole(TS, sym);
         afficherTableSymbole(TS); // afficher TS pour confirmer
         afficherTQ(TQ);
@@ -382,6 +383,9 @@ variable:
                     case 'B': $$.type = BOOLEAN; break;
                     default: $$.type = ENTIER;
                 }
+                char buf [256];
+                sprintf(buf, "%s", (char *)lireCase(found, $3));
+                $$.valeur = strdup(buf);
             }
        }
     }
@@ -1576,24 +1580,27 @@ retourner:
     ;
 
 assignment:
-    tableau ASSIGN expression{
+    ID DEB_TABLEAU INT FIN_TABLEAU ASSIGN expression{
         Symbole* found;
-        if (rechercherSymbole(TS, $1.nom, &found)) { 
+        if (rechercherSymbole(TS, $1, &found)) { 
+            if($3 >= (found->taille)){
+                semanticError("Index Hors Limites", line);
+            }
+            else{
             if (found->categorie == VARIABLE) {  
                 qC++;
-                // Create a buffer for the value
                 char buffer[256];
-                sprintf(buffer, "%s", $3.valeur ? $3.valeur : "");
+                sprintf(buffer, "%s", $6.valeur ? $6.valeur : "");
                 // Update the symbol's value
-                SetValueSymbol(found, buffer);
+                modifierCase(found,$3,buffer);
                 // Create quadruplet
-                quad = creer_Q(":=", $1.nom, " ", buffer, qC);
+                quad = creer_Q(":=", $1, " ", buffer, qC);
                 inserer_TQ(TQ, quad);
                  afficherTQ(TQ);
                 // Convert expression type to string for comparison
                 char* exprType = NULL;
-                printf("Type de l'expression: %d\n", $3.type);
-                switch($3.type) {
+                printf("Type de l'expression: %d\n", $6.type);
+                switch($6.type) {
                     case ENTIER: exprType = TYPE_ENTIER; break;
                     case FLOTTANT: exprType = TYPE_FLOTTANT; break;
                     case CHAR: exprType = TYPE_CHAR; break;
@@ -1608,17 +1615,18 @@ assignment:
             } else {
                 yyerrorSemantic("Identifier is not a variable");
             }
-        } else {
-            //on check dabord si il ya une fonction en cours de traitement 
+            }
+        }
+        else {
             if (saveFunctionDec != NULL) {
                 //on check si la variable est un parametre de la fonction
                 Parametre *param;
                 Symbole* found;
                 rechercherSymbole(TS, saveFunctionDec, &found);
-                if (rechercherParametre(found, $1.nom, &param)) {
+                if (rechercherParametre(found, $1, &param)) {
                     //on check si le type de retour est compatible avec le type de la variable
                     char* exprType = NULL;
-                    switch($3.type) {
+                    switch($6.type) {
                         case ENTIER: exprType = TYPE_ENTIER; break;
                         case FLOTTANT: exprType = TYPE_FLOTTANT; break;
                         case CHAR: exprType = TYPE_CHAR; break;
@@ -1636,7 +1644,8 @@ assignment:
             yyerrorSemantic("Variable non declaree");
         }
     } 
-    }
+    afficherTableSymbole(TS);
+    } SEMICOLON
     | ID ASSIGN expression {
         Symbole* found;
         if (rechercherSymbole(TS, $1, &found)) { // is declared
