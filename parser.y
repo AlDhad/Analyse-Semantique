@@ -1760,7 +1760,7 @@ condition:
             quad = pop(P);
             updateLabel(quad, qC);
         }
-        qC++;
+        //qC++;
         quad = creer_Q("finIf","", " ", "", qC);
         inserer_TQ(TQ, quad);
         
@@ -1793,7 +1793,7 @@ while_partie_une:
 
         printf("I'm inside while\n");
 
-        qC++;
+        // qC++;
         
         sauvDebut = qC;
     };
@@ -1836,7 +1836,7 @@ for_partie_une:
 
         printf("I'm inside for\n");
        
-        qC++;
+        // qC++;
         sauvDebut = qC;
     };
 
