@@ -499,11 +499,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("+", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("+", "$1", "$3", bff, qC);      
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -549,11 +545,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("-", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("-", "$1", "$3", bff, qC);     
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -599,11 +591,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("*", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("*", "$1", "$3", bff, qC);    
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -658,11 +646,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("/", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("/", "$1", "$3", bff, qC);    
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -703,11 +687,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("%", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("%", "$1", "$3", bff, qC);       
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -748,12 +728,8 @@ expression:
         qC++;
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
-        $$.nom=resultVarName;
-        quad = creer_Q("^", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        $$.nom=resultVarName;   
+        quad = creer_Q("^", "$1", "$3", bff, qC);   
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -789,12 +765,8 @@ expression:
         qC++;
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R", qC);
-        $$.nom = resultVarName;
-        quad = creer_Q("!", 
-                      $2.nom ? $2.nom : $2.valeur,
-                      "",
-                      $$.nom,
-                      qC);        
+        $$.nom = resultVarName;  
+        quad = creer_Q("!", "$1", "$3", bff, qC);      
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -855,7 +827,7 @@ expression:
     sprintf(resultVarName, "%s%d", "R", qC);
     $$.nom = strdup(resultVarName);
 
-    quad = creer_Q("<", "$1", "$3", bff, qC);
+    quad = creer_Q(">", "$1", "$3", bff, qC);
     if (quad == NULL) {
         free($$.valeur);
         free($$.nom);
@@ -913,12 +885,8 @@ expression:
         qC++;
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
-        $$.nom=resultVarName;
-        quad = creer_Q("=>", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        $$.nom=resultVarName;      
+        quad = creer_Q("=>", "$1", "$3", bff, qC); 
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -972,11 +940,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("<", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("<", "$1", "$3", bff, qC);      
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1029,11 +993,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("<=", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("<=", "$1", "$3", bff, qC);      
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1091,12 +1051,8 @@ expression:
         qC++;
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
-        $$.nom=resultVarName;
-        quad = creer_Q("==", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        $$.nom=resultVarName;       
+        quad = creer_Q("==", "$1", "$3", bff, qC);
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1153,12 +1109,8 @@ expression:
         qC++;
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
-        $$.nom=resultVarName;
-        quad = creer_Q("!=", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        $$.nom=resultVarName;  
+        quad = creer_Q("!=", "$1", "$3", bff, qC);      
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1199,11 +1151,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("&&", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("&&", "$1", "$3", bff, qC);       
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1245,11 +1193,7 @@ expression:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("||", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      $3.nom ? $3.nom : $3.valeur,
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("||", "$1", "$3", bff, qC);       
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1294,11 +1238,7 @@ incrementation:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("++", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      "",
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("++", "$1", "", bff, qC);      
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
@@ -1339,11 +1279,7 @@ incrementation:
         char resultVarName[20];
         sprintf(resultVarName, "%s%d", "R",qC);
         $$.nom=resultVarName;
-        quad = creer_Q("--", 
-                      $1.nom ? $1.nom : $1.valeur,
-                      "",
-                      $$.nom,
-                      qC);        
+        quad = creer_Q("--", "$1", "", bff, qC);    
         afficherQ(quad);        
         inserer_TQ(TQ, quad);
 
