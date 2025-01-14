@@ -1,0 +1,4 @@
+bison -d parser.y
+flex analyseur.l
+gcc -o flexbisontest parser.tab.c lex.yy.c pile.c symbolTable.c quadruplet.c -lfl -lm
+./flexbisontest ./tests/[testfile].txt
