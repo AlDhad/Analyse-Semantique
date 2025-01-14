@@ -3,7 +3,7 @@
 #include <string.h>
 #include "symbolTable.h"
 #include <stdbool.h>
-
+#include <ctype.h>
 
 // Création de la table des symboles
 
@@ -291,75 +291,311 @@ void SetValueSymbol(Symbole* symbole, char* value) {
         symbole->valeur = strdup(value);
     }
 }
+#define TYPE_ENTIER "ENTIER"
+#define TYPE_FLOTTANT "FLOTTANT"
+#define TYPE_CHAR "CHAR"
+#define TYPE_STRING "STRING"
+#define TYPE_BOOLEAN "BOOLEAN"
 
-// Fonction pour convertir un tableau d'entiers en une chaîne CSV
-char *convertirTableauEnCSV(int *tableau, int taille) {
-    char *resultat = malloc(1024); // Allouer une chaîne assez grande
+// Helper function to get type from string
+static char getTypeChar(const char* type) {
+    if (!type) return 0;
+    if (strcmp(type, TYPE_ENTIER) == 0) return 'i';
+    if (strcmp(type, TYPE_FLOTTANT) == 0) return 'f';
+    if (strcmp(type, TYPE_CHAR) == 0) return 'c';
+    if (strcmp(type, TYPE_STRING) == 0) return 's';
+    if (strcmp(type, TYPE_BOOLEAN) == 0) return 'b';
+    return 0;
+}
+
+char* convertirTableauEnCSV(void* tableau, int taille, const char* type) {
+    if (!tableau || taille < 0 || !type) return NULL;
+    
+    // Increase buffer size for safety
+    size_t bufferSize = taille * 256 + 1;  // Larger buffer to handle strings
+    char* resultat = malloc(bufferSize);
     if (!resultat) return NULL;
+    resultat[0] = '\0';
 
-    resultat[0] = '\0'; // Initialiser comme une chaîne vide
-    for (int i = 0; i < taille; i++) {
-        char buffer[32];
-        snprintf(buffer, sizeof(buffer), "%d", tableau[i]);
-        strcat(resultat, buffer);
-        if (i < taille - 1) strcat(resultat, ",");
+    char typeChar = getTypeChar(type);
+    if (!typeChar) {
+        free(resultat);
+        return NULL;
     }
+
+    size_t currentLen = 0;
+    for (int i = 0; i < taille; i++) {
+        char buffer[256];
+        size_t remainingSpace = bufferSize - currentLen;
+
+        switch (typeChar) {
+            case 'i':
+                snprintf(buffer, sizeof(buffer), "%d", ((int*)tableau)[i]);
+                break;
+            case 'f':
+                snprintf(buffer, sizeof(buffer), "%.2f", ((float*)tableau)[i]);
+                break;
+            case 'c':
+                if (((char*)tableau)[i] == '\0') {
+                    snprintf(buffer, sizeof(buffer), "null");
+                } else {
+                    snprintf(buffer, sizeof(buffer), "%c", ((char*)tableau)[i]);
+                }
+                break;
+            case 's': {
+                char** strArray = (char**)tableau;
+                if (strArray[i] == NULL) {
+                    snprintf(buffer, sizeof(buffer), "null");
+                } else {
+                    // Escape quotes in strings
+                    char* escaped = malloc(strlen(strArray[i]) * 2 + 3);
+                    if (!escaped) {
+                        free(resultat);
+                        return NULL;
+                    }
+                    char* dst = escaped;
+                    *dst++ = '"';
+                    for (char* src = strArray[i]; *src; src++) {
+                        if (*src == '"') *dst++ = '\\';
+                        *dst++ = *src;
+                    }
+                    *dst++ = '"';
+                    *dst = '\0';
+                    snprintf(buffer, sizeof(buffer), "%s", escaped);
+                    free(escaped);
+                }
+                break;
+            }
+            case 'b':
+                snprintf(buffer, sizeof(buffer), "%s", ((int*)tableau)[i] ? "true" : "false");
+                break;
+            default:
+                free(resultat);
+                return NULL;
+        }
+
+        if (strlen(buffer) + 1 >= remainingSpace) {  // +1 for comma or null terminator
+            free(resultat);
+            return NULL;
+        }
+
+        strcat(resultat, buffer);
+        currentLen += strlen(buffer);
+        
+        if (i < taille - 1) {
+            if (remainingSpace <= 1) {
+                free(resultat);
+                return NULL;
+            }
+            strcat(resultat, ",");
+            currentLen++;
+        }
+    }
+    
     return resultat;
 }
 
-// Exemple d'utilisation
-void ajouterValeurTableau(Symbole *symbole, int *tableau, int taille) {
-    symbole->valeur = convertirTableauEnCSV(tableau, taille);
-    symbole->taille = taille;
-}
-int *convertirCSVEnTableau(char *csv, int *taille) {
-    int *tableau = malloc(1024 * sizeof(int));
+void* convertirCSVEnTableau(char* csv, int* taille, const char* type) {
+    if (!csv || !taille || !type) return NULL;
+    
+    *taille = 0;
+    int maxElements = 1;
+    for (char* p = csv; *p; p++) {
+        if (*p == ',') maxElements++;
+    }
+
+    char typeChar = getTypeChar(type);
+    if (!typeChar) return NULL;
+    size_t elementSize;
+    switch (typeChar) {
+        case 'i': elementSize = sizeof(int); break;
+        case 'f': elementSize = sizeof(float); break;
+        case 'c': elementSize = sizeof(char); break;
+        case 's': elementSize = sizeof(char*); break;
+        case 'b': elementSize = sizeof(int); break;
+        default: return NULL;
+    }
+
+    void* tableau = calloc(maxElements, elementSize);
     if (!tableau) return NULL;
 
-    char *token = strtok(csv, ",");
-    int index = 0;
-    while (token != NULL) {
-        tableau[index++] = atoi(token);
-        token = strtok(NULL, ",");
+    char* csvCopy = strdup(csv);
+    if (!csvCopy) {
+        free(tableau);
+        return NULL;
     }
+
+    char* context = NULL;
+    char* token = strtok_r(csvCopy, ",", &context);
+    int index = 0;
+
+    while (token && index < maxElements) {
+        while (isspace(*token)) token++;
+        char* end = token + strlen(token) - 1;
+        while (end > token && isspace(*end)) end--;
+        *(end + 1) = '\0';
+        switch (typeChar) {
+            case 'i':
+                ((int*)tableau)[index] = atoi(token);
+                break;
+            case 'f':
+                ((float*)tableau)[index] = atof(token);
+                break;
+            case 'c':
+                if (strcmp(token, "null") == 0) {
+                    ((char*)tableau)[index] = '\0';
+                } else {
+                    ((char*)tableau)[index] = token[0];
+                }
+                break;
+            case 's': {
+                if (strcmp(token, "null") == 0) {
+                    ((char**)tableau)[index] = NULL;
+                } else {
+                    // Handle escaped quotes
+                    if (token[0] == '"') {
+                        token++;
+                        end = strrchr(token, '"');
+                        if (end) *end = '\0';
+                    }
+                    size_t len = strlen(token);
+                    char* str = malloc(len + 1);
+                    if (!str) {
+                        // Clean up on allocation failure
+                        for (int i = 0; i < index; i++) {
+                            free(((char**)tableau)[i]);
+                        }
+                        free(tableau);
+                        free(csvCopy);
+                        return NULL;
+                    }
+                    // Unescape quotes
+                    char* dst = str;
+                    for (char* src = token; *src; src++) {
+                        if (*src == '\\' && *(src + 1) == '"') {
+                            src++;
+                        }
+                        *dst++ = *src;
+                    }
+                    *dst = '\0';
+                    printf("Valeur str: %s\n", str);  // Debug print
+                    ((char**)tableau)[index] = str;
+                }
+                break;
+            }
+            case 'b':
+                ((int*)tableau)[index] = (strcmp(token, "true") == 0) ? 1 : 0;
+                break;
+        }
+        token = strtok_r(NULL, ",", &context);
+        index++;
+    }
+
+    free(csvCopy);
     *taille = index;
     return tableau;
 }
 
 void lireValeursTableau(Symbole *symbole) {
     int taille;
-    int *tableau = convertirCSVEnTableau(symbole->valeur, &taille);
-
+    void *tableau = convertirCSVEnTableau(symbole->valeur, &taille, symbole->type);
+    
     printf("Tableau (taille %d) : ", taille);
+    char typeChar = getTypeChar(symbole->type);
+    
     for (int i = 0; i < taille; i++) {
-        printf("%d ", tableau[i]);
+        switch (typeChar) {
+            case 'i': // ENTIER
+                printf("%d ", ((int*)tableau)[i]);
+                break;
+            case 'f': // FLOTTANT
+                printf("%.2f ", ((float*)tableau)[i]);
+                break;
+            case 'c': // CHAR
+                if (((char*)tableau)[i] == '\0') {
+                    printf("null ");
+                } else {
+                    printf("%c ", ((char*)tableau)[i]);
+                }
+                break;
+            case 's': // STRING
+                if (((char**)tableau)[i] == NULL) {
+                    printf("null ");
+                } else {
+                    printf("\"%s\" ", ((char**)tableau)[i]);
+                }
+                break;
+            case 'b': // BOOLEAN
+                printf("%s ", ((int*)tableau)[i] ? "true" : "false");
+                break;
+        }
     }
     printf("\n");
-    free(tableau); 
-}
-void initialiserTableau(Symbole *symbole, int taille) {
-    // Allouer assez de mémoire pour la chaîne CSV
-    char *resultat = malloc(taille * 2); // Chaque chiffre + virgule
-    if (!resultat) return;
 
-    resultat[0] = '\0'; // Chaîne vide pour commencer
+    if (typeChar == 's') {
+        for (int i = 0; i < taille; i++) {
+            free(((char**)tableau)[i]);
+        }
+    }
+    free(tableau);
+}
+
+void initialiserTableau(Symbole *symbole, int taille) {
+    char *resultat = malloc(taille * 16);
+    if (!resultat) return;
+    resultat[0] = '\0';
+
+    char typeChar = getTypeChar(symbole->type);
     for (int i = 0; i < taille; i++) {
-        strcat(resultat, "0"); // Ajouter un zéro
-        if (i < taille - 1) strcat(resultat, ","); // Ajouter une virgule
+        if (typeChar == 'b') {
+            strcat(resultat, "false"); // Initialisation par défaut pour boolean
+        } else {
+            strcat(resultat, "null");
+        }
+        if (i < taille - 1) strcat(resultat, ",");
     }
 
     symbole->valeur = resultat;
     symbole->taille = taille;
 }
 
-// Fonction pour modifier une valeur à une position spécifique
-void modifierCase(Symbole *symbole, int index, int nouvelleValeur) {
+void modifierCase(Symbole *symbole, int index, void *nouvelleValeur) {
     if (index < 0 || index >= symbole->taille) {
         printf("Index invalide : %d\n", index);
         return;
     }
+    char buffer[256];
+    char typeChar = getTypeChar(symbole->type);
+    switch (typeChar) {
+        case 'i': // ENTIER
+            snprintf(buffer, sizeof(buffer), "%d", *((int*)nouvelleValeur));
+            break;
+        case 'f': // FLOTTANT
+            snprintf(buffer, sizeof(buffer), "%.2f", *((float*)nouvelleValeur));
+            break;
+        case 'c': // CHAR
+            if (*((char*)nouvelleValeur) == '\0') {
+                snprintf(buffer, sizeof(buffer), "null");
+            } else {
+                snprintf(buffer, sizeof(buffer), "%c", *((char*)nouvelleValeur));
+            }
+            break;
+        case 's': // STRING
+            if (*((char**)nouvelleValeur) == NULL) {
+                snprintf(buffer, sizeof(buffer), "null");
+            } else {
+                snprintf(buffer, sizeof(buffer), "\"%s\"", (char*)nouvelleValeur);
+            }
+                printf("Nouvelle valeur: %s\n", (char*)nouvelleValeur);
 
-    // Créer une copie pour manipulation
+            break;
+        case 'b': // BOOLEAN
+            snprintf(buffer, sizeof(buffer), "%s", *((int*)nouvelleValeur) ? "true" : "false");
+            break;
+        default:
+            return;
+    }
+
     char *csvCopy = strdup(symbole->valeur);
     char *token = strtok(csvCopy, ",");
     char nouvelleCSV[1024] = "";
@@ -367,21 +603,84 @@ void modifierCase(Symbole *symbole, int index, int nouvelleValeur) {
 
     while (token != NULL) {
         if (position == index) {
-            char buffer[16];
-            snprintf(buffer, sizeof(buffer), "%d", nouvelleValeur); // Nouvelle valeur
             strcat(nouvelleCSV, buffer);
         } else {
             strcat(nouvelleCSV, token);
         }
-
         token = strtok(NULL, ",");
         if (token != NULL) strcat(nouvelleCSV, ",");
         position++;
     }
 
-    free(csvCopy); // Libérer la copie temporaire
-
-    // Mettre à jour la chaîne CSV
+    free(csvCopy);
     free(symbole->valeur);
     symbole->valeur = strdup(nouvelleCSV);
+}
+
+void* lireCase(Symbole *symbole, int index) {
+    if (index < 0 || index >= symbole->taille) {
+        printf("Index invalide : %d\n", index);
+        return NULL;
+    }
+
+    int taille;
+    printf("Valeur CSV: %s\n", symbole->valeur);  // Debug print
+    char *tableau = convertirCSVEnTableau(symbole->valeur, &taille, symbole->type);
+    if (!tableau) {
+        printf("Erreur lors de la conversion CSV en tableau\n");  // Debug print
+        return NULL;
+    }
+        printf("Valeur table: %s\n", ((char**)tableau)[index]);  // Debug print
+
+    void *resultat = NULL;
+    char typeChar = getTypeChar(symbole->type);
+    switch (typeChar) {
+        case 'i': { // ENTIER
+            int *val = malloc(sizeof(int));
+            *val = ((int*)tableau)[index];
+            resultat = val;
+            break;
+        }
+        case 'f': { // FLOTTANT
+            float *val = malloc(sizeof(float));
+            *val = ((float*)tableau)[index];
+            resultat = val;
+            break;
+        }
+        case 'c': { // CHAR
+            char *val = malloc(sizeof(char));
+            *val = ((char*)tableau)[index];
+            resultat = val;
+            break;
+        }
+        case 's': { // STRING
+            char *val = malloc(sizeof(char*));
+            val = ((char**)tableau)[index] ? strdup(((char**)tableau)[index]) : NULL;
+            resultat = val;
+            break;
+        }
+        case 'b': { // BOOLEAN
+            int *val = malloc(sizeof(int));
+            *val = ((int*)tableau)[index];
+            resultat = val;
+            break;
+        }
+    }
+
+    if (typeChar == 's') {
+        for (int i = 0; i < taille; i++) {
+            free(((char**)tableau)[i]);
+        }
+    }
+    free(tableau);
+
+    return resultat;
+}
+
+
+
+void afficherSymbole(Symbole* s) {
+    printf("Type: %s\n", s->type);
+    printf("Valeur: %s\n", s->valeur);
+    printf("Taille: %d\n\n", s->taille);
 }
