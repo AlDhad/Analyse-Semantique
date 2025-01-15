@@ -92,12 +92,8 @@ void SetValueSymbol(Symbole* symbole, char* value);
 const char* categorieToString(CategorieSymbole categorie);
 bool rechercherParametre(Symbole *fonction, const char *nomParam, Parametre **parametreTrouve) ;
 static char getTypeChar(const char* type) ;
-char *convertirTableauEnCSV(void *tableau, int taille, const char* type);
-void ajouterValeurTableau(Symbole *symbole, void *tableau, int taille);
 void *convertirCSVEnTableau(char *csv, int *taille, const char* type) ;
-void lireValeursTableau(Symbole *symbole) ;
 void initialiserTableau(Symbole *symbole, int taille);
 void modifierCase(Symbole *symbole, int index, void *nouvelleValeur) ;
 void *lireCase(Symbole *symbole, int index);
-void afficherSymbole(Symbole* s);
 #endif

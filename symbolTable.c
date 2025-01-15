@@ -308,93 +308,6 @@ static char getTypeChar(const char* type) {
     return 0;
 }
 
-char* convertirTableauEnCSV(void* tableau, int taille, const char* type) {
-    if (!tableau || taille < 0 || !type) return NULL;
-    
-    // Increase buffer size for safety
-    size_t bufferSize = taille * 256 + 1;  // Larger buffer to handle strings
-    char* resultat = malloc(bufferSize);
-    if (!resultat) return NULL;
-    resultat[0] = '\0';
-
-    char typeChar = getTypeChar(type);
-    if (!typeChar) {
-        free(resultat);
-        return NULL;
-    }
-
-    size_t currentLen = 0;
-    for (int i = 0; i < taille; i++) {
-        char buffer[256];
-        size_t remainingSpace = bufferSize - currentLen;
-
-        switch (typeChar) {
-            case 'i':
-                snprintf(buffer, sizeof(buffer), "%d", ((int*)tableau)[i]);
-                break;
-            case 'f':
-                snprintf(buffer, sizeof(buffer), "%.2f", ((float*)tableau)[i]);
-                break;
-            case 'c':
-                if (((char*)tableau)[i] == '\0') {
-                    snprintf(buffer, sizeof(buffer), "null");
-                } else {
-                    snprintf(buffer, sizeof(buffer), "%c", ((char*)tableau)[i]);
-                }
-                break;
-            case 's': {
-                char** strArray = (char**)tableau;
-                if (strArray[i] == NULL) {
-                    snprintf(buffer, sizeof(buffer), "null");
-                } else {
-                    // Escape quotes in strings
-                    char* escaped = malloc(strlen(strArray[i]) * 2 + 3);
-                    if (!escaped) {
-                        free(resultat);
-                        return NULL;
-                    }
-                    char* dst = escaped;
-                    *dst++ = '"';
-                    for (char* src = strArray[i]; *src; src++) {
-                        if (*src == '"') *dst++ = '\\';
-                        *dst++ = *src;
-                    }
-                    *dst++ = '"';
-                    *dst = '\0';
-                    snprintf(buffer, sizeof(buffer), "%s", escaped);
-                    free(escaped);
-                }
-                break;
-            }
-            case 'b':
-                snprintf(buffer, sizeof(buffer), "%s", ((int*)tableau)[i] ? "true" : "false");
-                break;
-            default:
-                free(resultat);
-                return NULL;
-        }
-
-        if (strlen(buffer) + 1 >= remainingSpace) {  // +1 for comma or null terminator
-            free(resultat);
-            return NULL;
-        }
-
-        strcat(resultat, buffer);
-        currentLen += strlen(buffer);
-        
-        if (i < taille - 1) {
-            if (remainingSpace <= 1) {
-                free(resultat);
-                return NULL;
-            }
-            strcat(resultat, ",");
-            currentLen++;
-        }
-    }
-    
-    return resultat;
-}
-
 void* convertirCSVEnTableau(char* csv, int* taille, const char* type) {
     if (!csv || !taille || !type) return NULL;
     
@@ -494,50 +407,6 @@ void* convertirCSVEnTableau(char* csv, int* taille, const char* type) {
     free(csvCopy);
     *taille = index;
     return tableau;
-}
-
-void lireValeursTableau(Symbole *symbole) {
-    int taille;
-    void *tableau = convertirCSVEnTableau(symbole->valeur, &taille, symbole->type);
-    
-    printf("Tableau (taille %d) : ", taille);
-    char typeChar = getTypeChar(symbole->type);
-    
-    for (int i = 0; i < taille; i++) {
-        switch (typeChar) {
-            case 'i': // ENTIER
-                printf("%d ", ((int*)tableau)[i]);
-                break;
-            case 'f': // FLOTTANT
-                printf("%.2f ", ((float*)tableau)[i]);
-                break;
-            case 'c': // CHAR
-                if (((char*)tableau)[i] == '\0') {
-                    printf("null ");
-                } else {
-                    printf("%c ", ((char*)tableau)[i]);
-                }
-                break;
-            case 's': // STRING
-                if (((char**)tableau)[i] == NULL) {
-                    printf("null ");
-                } else {
-                    printf("\"%s\" ", ((char**)tableau)[i]);
-                }
-                break;
-            case 'b': // BOOLEAN
-                printf("%s ", ((int*)tableau)[i] ? "true" : "false");
-                break;
-        }
-    }
-    printf("\n");
-
-    if (typeChar == 's') {
-        for (int i = 0; i < taille; i++) {
-            free(((char**)tableau)[i]);
-        }
-    }
-    free(tableau);
 }
 
 void initialiserTableau(Symbole *symbole, int taille) {
@@ -675,12 +544,4 @@ void* lireCase(Symbole *symbole, int index) {
     free(tableau);
 
     return resultat;
-}
-
-
-
-void afficherSymbole(Symbole* s) {
-    printf("Type: %s\n", s->type);
-    printf("Valeur: %s\n", s->valeur);
-    printf("Taille: %d\n\n", s->taille);
 }
