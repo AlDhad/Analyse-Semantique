@@ -3383,7 +3383,7 @@ yyreduce:
 #line 1902 "parser.y"
                 {
         //maj de l'adresse de branchement etiquette else
-        // qC++;
+        qC++;
         quad = pop(P);
         updateLabel(quad, qC+1);
     }
